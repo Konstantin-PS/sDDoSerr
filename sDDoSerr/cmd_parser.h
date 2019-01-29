@@ -1,12 +1,11 @@
-/* 
+/*
  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
  * 
- * Основной модуль программы.
+ * Заголовочный файл для парсера командной строки.
  * 
- * v.1.1.3.1a от 29.01.19.
- * !Не забывать изменять *argp_program_version под новую версию!
+ * v.1.1.2.2a от 29.01.19.
  */
-
+ 
 /**
     This file is part of sDDoSerr.
 sDDoSerr is a research program for emulating shrew (D)DoS traffic and
@@ -62,62 +61,30 @@ sDDoSerr Copyright © 2019 Константин Панков
    Вы должны были получить копию Стандартной общественной лицензии GNU
    вместе с этой программой. Если это не так, см.
    <https://www.gnu.org/licenses/>. 
- **/
+ **/ 
 
-#include <stdio.h>
-#include "cmd_parser.h"
-#include "udp_sender.h"
+#ifndef CMD_PARSER_H
+#define CMD_PARSER_H
 
-//char *message; //!Надо (глобально) выделить память.
+//Другие модули должны знать только об структурах с настройками и 
+//функции сдвоенного парсера.
+struct Settings 
+    {
+    char *url;
+    char *port;
+    int  size;
+    int  buffsize;
+    int  protocol;
+    int  procnum;
+    };
 
-int main (int argc, char *argv[])
-//int main ()
-{
-    //Запуск моей функции сдвоенного парсера и получение на выходе
-    //структуры со всеми настройками программы.
-    printf("Запуск функции парсера. \n");
-    struct Settings settings = parser (argc, argv);
-    
-    printf("Запуск функции создания сокета. \n");
-    //Вызов функции отправщика пакетов с передачей ему структуры настроек.
-    struct Socket udp_sock = udp_socket_open (settings);
-    //int udp_sender = udp_sender(settings);
-    //! НЕ РАБОТАЕТ с одинаковыми именами!
-    
-    int size = settings.size;
-    
-    printf("Выделение памяти под сообщение. \n");
-    char message [size+1];
-    
-    printf("Создание сообщения. \n");
-    
-    //Создание сообщения.
-    for (int i = 0; i <= size; i++)
-        {
-            message[i] = '0';
-        }
-        message[size] = '\0'; //Терминация последнего байта сообщения.
-    
-    printf("Вызов функции отправки. \n");
-    
-    //Вызываем функция отправки. Потом в цикле с сообщениями из 
-    //предварительно сгенерированного массива.
-    //int udp_send = udp_sender (udp_socket, *message);
-    int udp_send = udp_sender (udp_socket, *message);
-    
-    printf("Закрытие сокета. \n");
-    
-    //Закрытие сокета.
-    int udp_close = udp_closer (udp_socket);
+struct Settings settings;
+
+struct Settings parser (int argc, char *argv[]);
+
+//int parse_opt (int, char, struct argp_state);
+
+//struct argp argp;
 
 
-    //Отладка.
-    printf("*DEBUG* \n" \
-            "url = %s, port = %s, size = %i, buffsize = %i, "\
-            "protocol = %s, procnum = %i \n" \
-            "*DEBUG* \n",\
-            settings.url, settings.port, settings.size,\
-            settings.buffsize, settings.protocol, settings.procnum);
-    
-    return 0;
-}
+#endif

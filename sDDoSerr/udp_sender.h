@@ -1,11 +1,11 @@
-/*
+/* 
  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
  * 
- * Заголовочный файл для парсера командной строки.
+ * Заголовочный файл для модуля отправки UDP пакетов.
  * 
- * v.1.1.2a от 10.01.19.
+ * v.1.0.2a от 29.01.19.
  */
- 
+
 /**
     This file is part of sDDoSerr.
 sDDoSerr is a research program for emulating shrew (D)DoS traffic and
@@ -63,29 +63,35 @@ sDDoSerr Copyright © 2019 Константин Панков
    <https://www.gnu.org/licenses/>. 
  **/ 
 
-#ifndef CMDPARSER_H
-#define CMDPARSER_H
+#ifndef UDP_SENDER_H
+#define UDP_SENDER_H
 
-//Другие модули должны знать только об структурах с настройками и 
-//функции сдвоенного парсера.
-struct Settings {
-    char *url;
-    int  port;
-    int  size;
-    int  buffsize;
-    int  protocol;
-    int  procnum;
+//#include "cmd_parser.h" //Или надо.
+
+//#define BUF_SIZE 500
+
+#include <sys/socket.h>
+
+struct Socket 
+    {
+        int sock;
+        int size;
+        //long address;
+        //int address;
+        struct sockaddr address;
     };
 
-struct Settings settings;
+struct Socket udp_socket;
 
-struct Settings parser (int argc, char *argv[]);
+struct Socket udp_socket_open (struct Settings settings);
 
-//int parse_opt (int, char, struct argp_state);
+//char *message;
 
-//struct argp argp;
+int udp_sender (struct Socket udp_socket, char message);
+
+int udp_closer (struct Socket udp_socket);
+
+
 
 
 #endif
-
-//!Сделать после основноо файла (.с).
