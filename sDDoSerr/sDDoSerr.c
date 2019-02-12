@@ -3,8 +3,8 @@
  * 
  * Основной модуль программы.
  * 
- * v.1.1.3.1a от 29.01.19.
- * !Не забывать изменять *argp_program_version под новую версию!
+ * v.1.1.4.2a от 12.02.19.
+ * !Не забывать изменять *argp_program_version под новую версию в парсере!
  */
 
 /**
@@ -69,6 +69,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 #include "udp_sender.h"
 
 //char *message; //!Надо (глобально) выделить память.
+//char message [];
 
 int main (int argc, char *argv[])
 //int main ()
@@ -84,26 +85,59 @@ int main (int argc, char *argv[])
     //int udp_sender = udp_sender(settings);
     //! НЕ РАБОТАЕТ с одинаковыми именами!
     
-    int size = settings.size;
+    int max_size = settings.max_size; //Брать из массива с прегенерёнными значениями.
+    ///Или генерировать полные поля структуры. Но это может занимать слишком много памяти.
+    
+    
+    //Структура сообщения.
+    struct Message message_struct;
     
     printf("Выделение памяти под сообщение. \n");
-    char message [size+1];
+    char message0 [max_size];
+    //char *message [max_size];
+    //char *message;
     
     printf("Создание сообщения. \n");
-    
     //Создание сообщения.
-    for (int i = 0; i <= size; i++)
+    //char *message0 = NULL;
+    //for (int i = 0; i <= size; i++)
+    for (int i = 0; i < max_size; i++)
         {
-            message[i] = '0';
+            message0[i] = '0';
         }
-        message[size] = '\0'; //Терминация последнего байта сообщения.
+        message0[max_size] = '\0'; //Терминация последнего байта сообщения.
+    
+    int mes_size = sizeof (message0);
+    
+    //printf("Message0 from main: %s \n", message0);
+    
+    //Заполняем структуру сообщения.
+    message_struct.message = message0;
+    message_struct.mes_size = mes_size;
+    
+    printf("Message from struct: %s \n", message_struct.message);
+    printf("Size of message from struct: %i \n", message_struct.mes_size);
+    
+    
+    
+    //Забиваем нулями сообщение.
+    //memset(&message, 0, max_size);
+    
+    //Или сразу инициализируем пустое сообщение (с нулями).
+    //char message[max_size] = ""; //А вот фиг там! Компилятору не нравится инициализировать объект, зависящий от переменной.
+    
+    
+    //Запись в структуру параметров сообщения.
+    //message_params.size = settings.size; //Заменить потом на sizeof(message);
+    
     
     printf("Вызов функции отправки. \n");
     
-    //Вызываем функция отправки. Потом в цикле с сообщениями из 
+    //Вызываем функцию отправки. Потом в цикле с сообщениями из 
     //предварительно сгенерированного массива.
     //int udp_send = udp_sender (udp_socket, *message);
-    int udp_send = udp_sender (udp_socket, *message);
+    //int udp_send = udp_sender (udp_socket, message);
+    int udp_send = udp_sender (udp_socket, message_struct);
     
     printf("Закрытие сокета. \n");
     
@@ -113,10 +147,10 @@ int main (int argc, char *argv[])
 
     //Отладка.
     printf("*DEBUG* \n" \
-            "url = %s, port = %s, size = %i, buffsize = %i, "\
+            "url = %s, port = %s, max_size = %i, buffsize = %i, "\
             "protocol = %s, procnum = %i \n" \
             "*DEBUG* \n",\
-            settings.url, settings.port, settings.size,\
+            settings.url, settings.port, settings.max_size,\
             settings.buffsize, settings.protocol, settings.procnum);
     
     return 0;

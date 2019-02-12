@@ -3,7 +3,7 @@
  * 
  * Модуль отправки UDP пакетов.
  * 
- * v.1.0.2a от 29.01.19.
+ * v.1.0.3.3a от 12.02.19.
  */
  
 /**
@@ -84,7 +84,7 @@ struct Socket udp_socket;
 //Переменная под сообщение.
 //char *message;
 
-//!Надо делать в классе. А в C нет классов, кажись.
+//Надо бы делать в классе. А в голом C нет классов.
 
 //Функция отправки пакетов.
 struct Socket udp_socket_open (struct Settings settings)
@@ -93,20 +93,20 @@ struct Socket udp_socket_open (struct Settings settings)
     //int  BUF_SIZE = settings.buffsize; //Размер буффера отправки.
     char *url = settings.url;
     char *port = settings.port;
-    int  size = settings.size;
-    int  protocol = settings.protocol;
+    //int  size = settings.size;
+    ///int  protocol = settings.protocol;
     
     //char buf[BUF_SIZE]; //Буффер. А он не нужен, если не считывать ответ.
     
-    int status; //Временная переменная статуса для вызова getaddrinfo().
+    int status; //Временная переменная статуса 
+    //для отслеживания статуса выполнения getaddrinfo().
     
     //Структура параметров сокета типа addrinfo по имени hints.
     struct addrinfo hints;
-    struct addrinfo *host_info, *ht; //Информация о хосте и 
-                                    //временная переменная для этого.
+    struct addrinfo *host_info, *ht; //Указатель на информацию о хосте и 
+                                    //временный указатель для этого.
     
     int sock; //Сокет.
-    //int i; //Маркер итераций.
     
     
     //! С соединённым сокетом.
@@ -119,9 +119,8 @@ struct Socket udp_socket_open (struct Settings settings)
     hints.ai_family = AF_UNSPEC;    // Разрешает IPv4 or IPv6.
     hints.ai_socktype = SOCK_DGRAM; // Сокет датаграмм для UDP.
     hints.ai_flags = AI_NUMERICSERV;
-    hints.ai_protocol = protocol;   // Протокол. 0 - любой.
-    //hints.ai_protocol = *protocol;   // Протокол. 0 - любой.
-        //!Проверить, будет ли работать при такой передаче значения.
+    //hints.ai_protocol = protocol;   // Протокол. 0 - любой.
+    hints.ai_protocol = settings.protocol;   // Протокол. 0 - любой.
     
     
     //Получаем информацию о хосте по подсказкам и записываем в host_info.
@@ -132,7 +131,7 @@ struct Socket udp_socket_open (struct Settings settings)
             exit(EXIT_FAILURE);
         }
     
-    //! Далее только для режима с соединением.
+    //! Далее для режима с соединением (соединённый сокет).
     
     /*
      * Функция getaddrinfo() возвращает список адресных структур.
@@ -166,9 +165,7 @@ struct Socket udp_socket_open (struct Settings settings)
     
     //Заполняем структуру сокета.
     udp_socket.sock = sock;
-    udp_socket.size = size;
-    //udp_socket.address = hints.ai_addr; //Тут 0, хотя в примере значение.
-    //udp_socket.address = host_info -> ai_addr;
+    //udp_socket.size = size;
     
     udp_socket.address = *host_info -> ai_addr;
     //udp_socket.address = *hints.ai_addr; //Отдаёт как есть.
@@ -183,26 +180,45 @@ struct Socket udp_socket_open (struct Settings settings)
     //Нужна структура с полями sock, size, hints.ai_addr;
  }
  
- int udp_sender (struct Socket udp_socket, char message)
+ 
+ //Функция отправки сообщения.
+ int udp_sender (struct Socket udp_socket, struct Message message_struct)
 {
+    /*
+     * Нечего разбрасываться памятью под новые переменные,
+     * если они дублирующие!
+     * 
     int sock = udp_socket.sock;
-    int size = udp_socket.size;
     struct sockaddr address = udp_socket.address;
     
-    //char *message;     //Переменная под сообщение.
+    char *message = message_struct.message;
+    //int size = sizeof(message); //Не работает так.
+    int size = message_struct.mes_size;
+    */
     
     //Отправка пакетов (датаграмм).
-    //Забиваем переменную сообщения message заданным в size количеством
-    //каких-нибудь символов, например, нулями.
     int stat = 0;
     
-    printf("Message from udp_sender: %c \n", message);
+    printf("Message from udp_sender: %s \n", message_struct.message);
     
+    /**
     if (stat = sendto(sock, &message, size+1, 0, \
         //(struct sockaddr *)&host, sizeof(host)) != size)
         (struct sockaddr *)&address, sizeof(address)) != size+1)
         {
             fprintf(stderr, "Ошибка / частичная запись в сокет. Записано: %i \n", stat);
+            exit(EXIT_FAILURE);
+        }
+    //size+1
+    **/
+    
+    if (stat = sendto(udp_socket.sock, message_struct.message,\
+        message_struct.mes_size+1, 0,\
+        (struct sockaddr *)&udp_socket.address,\
+        sizeof(udp_socket.address)) != message_struct.mes_size+1)
+        {
+            fprintf(stderr,\
+            "Ошибка / частичная запись в сокет. Записано: %i \n", stat);
             exit(EXIT_FAILURE);
         }
     

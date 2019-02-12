@@ -3,7 +3,7 @@
  * 
  * Заголовочный файл для модуля отправки UDP пакетов.
  * 
- * v.1.0.2a от 29.01.19.
+ * v.1.0.2.3a от 01.02.19.
  */
 
 /**
@@ -75,7 +75,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 struct Socket 
     {
         int sock;
-        int size;
+        //int size;
         //long address;
         //int address;
         struct sockaddr address;
@@ -87,7 +87,24 @@ struct Socket udp_socket_open (struct Settings settings);
 
 //char *message;
 
-int udp_sender (struct Socket udp_socket, char message);
+//int udp_sender (struct Socket udp_socket, char message); //Полная ерунда.
+
+//int udp_sender (struct Socket udp_socket, char message []); //Ерунда, но получше.
+//int udp_sender (struct Socket udp_socket, char *message); //Ерунда, похуже.
+
+
+//int udp_sender (struct Socket udp_socket, char (*message)[]);
+
+
+//"Каркас" структуры сообщения (из main).
+struct Message
+{
+    char *message;
+    int mes_size;
+};
+
+int udp_sender (struct Socket udp_socket, struct Message message);
+
 
 int udp_closer (struct Socket udp_socket);
 

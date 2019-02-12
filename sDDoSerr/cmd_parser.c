@@ -5,7 +5,7 @@
  * Для парсинга конфигурационного ini файла используется 
  * сторонний модуль minIni.
  * 
- * v.1.1.2.2a от 29.01.19.
+ * v.1.1.3.4a от 12.02.19.
  */
 
 /**
@@ -78,7 +78,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 //#define URL_LEN 500
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.1.2.1a";
+const char *argp_program_version = "v.1.1.4.2a";
 
 //Функция парсера.
 /*
@@ -116,7 +116,7 @@ const char config[] = "config.ini";
 
 
 //Внутренние переменные со значениями из конфиг-файла.
-int  size; //Размер пакета.
+int  max_size; //Размер пакета.
 int  buffsize; //Размер буффера передачи.
 //char *protocol; //Протокол.
 int  protocol; //Протокол.
@@ -136,7 +136,7 @@ struct Settings {
     //char url[URL_LEN]; //Для жёстко заданного размера.
     char *url;
     char *port;
-    int  size;
+    int  max_size;
     int  buffsize;
     char *protocol;
     int  procnum;
@@ -150,7 +150,7 @@ struct Settings settings;
 struct Settings parser (int argc, char *argv[])
 {
     //Считываем настройки по-умолчанию из конфигурационного файла.
-    size = ini_getl("General", "Size", -1, config);
+    max_size = ini_getl("General", "MaxSize", -1, config);
     buffsize = ini_getl("General", "BuffSize", -1, config);
     protocol = ini_getl("General", "Protocol", -1, config); //* не раб.
     procnum = ini_getl("General", "ProcNum", -1, config);
@@ -248,7 +248,7 @@ struct Settings parser (int argc, char *argv[])
     
     settings.port = port;
     
-    settings.size = size;
+    settings.max_size = max_size;
     settings.buffsize = buffsize;
     settings.protocol = protocol;
     settings.procnum = procnum;
@@ -274,7 +274,7 @@ int main (int argc, char *argv[])
     //Отладка.
     
     printf("*DEBUG* \n" \
-            "url = %s, port = %s, size = %i, buffsize = %i, "\
+            "url = %s, port = %s, max_size = %i, buffsize = %i, "\
             "protocol = %s, procnum = %i \n" \
             "*DEBUG* \n",\
             settings.url, settings.port, settings.size,\
