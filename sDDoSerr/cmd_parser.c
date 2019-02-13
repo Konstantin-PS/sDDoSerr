@@ -5,7 +5,7 @@
  * Для парсинга конфигурационного ini файла используется 
  * сторонний модуль minIni.
  * 
- * v.1.1.3.6a от 12.02.19.
+ * v.1.1.4.7a от 13.02.19.
  */
 
 /**
@@ -78,7 +78,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 //#define URL_LEN 500
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.1.4.4a";
+const char *argp_program_version = "v.1.1.5.5a";
 
 //Функция парсера.
 /*
@@ -122,6 +122,7 @@ int  buffsize; //Размер буффера передачи.
 //char *protocol; //Протокол.
 int  protocol; //Протокол.
 int  procnum; //Количество процессов/потоков.
+int  pack_size; //Количество пакетов в одной "пачке", т.е. её размер.
 
 
 /* 
@@ -156,6 +157,8 @@ struct Settings parser (int argc, char *argv[])
     buffsize = ini_getl("General", "BuffSize", -1, config);
     protocol = ini_getl("General", "Protocol", -1, config); //* не раб.
     procnum = ini_getl("General", "ProcNum", -1, config);
+    pack_size = ini_getl("General", "NumOfPacketsInPack", -1, config);
+    
     
     
     //Типа защиты от запуска без аргументов.
@@ -255,6 +258,7 @@ struct Settings parser (int argc, char *argv[])
     settings.buffsize = buffsize;
     settings.protocol = protocol;
     settings.procnum = procnum;
+    settings.pack_size = pack_size;
     
     //return 0;
     return settings; //Возвращаем структуру со всеми настройками, 

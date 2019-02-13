@@ -3,7 +3,7 @@
  * 
  * Заголовочный файл для парсера командной строки.
  * 
- * v.1.1.3.5a от 12.02.19.
+ * v.1.1.4.6a от 13.02.19.
  */
  
 /**
@@ -77,6 +77,7 @@ struct Settings
     int  buffsize;
     int  protocol;
     int  procnum;
+    int  pack_size;
     };
 
 struct Settings settings;

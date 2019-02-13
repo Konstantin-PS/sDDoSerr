@@ -3,7 +3,7 @@
  * 
  * Основной модуль программы.
  * 
- * v.1.1.4.4a от 12.02.19.
+ * v.1.1.5.5a от 13.02.19.
  * !Не забывать изменять *argp_program_version под новую версию в парсере!
  */
 
@@ -72,6 +72,10 @@ sDDoSerr Copyright © 2019 Константин Панков
 
 int main (int argc, char *argv[])
 {
+    //!Типа лога.
+    FILE *log;
+    log = fopen ("log.txt", "w+"); //Открытие файла. Поток log.
+    
     //Запуск моей функции сдвоенного парсера и получение на выходе
     //структуры со всеми настройками программы.
     printf("Запуск функции парсера. \n");
@@ -108,7 +112,7 @@ int main (int argc, char *argv[])
     for (int j = 0; j <= settings.num_deltas; j++)
         {
             //message_deltas[j] = rand() % max_size-1; //От 0 до % максимум-1.
-            message_deltas[j] = random() % max_size-1; //От 0 до % максимум-1.
+            message_deltas[j] = random() % (max_size-1); //От 0 до % максимум-1.
        //Т.е. при задании .. % 50 будут генерироваться числа от 0 до 49.
        
             //!Дебажный вывод содержимого массива. УБРАТЬ!
@@ -118,11 +122,90 @@ int main (int argc, char *argv[])
     printf("\n"); //! Отладка. Убрать.
     
     
-    //!Переделать сообщение под рандомный мусор внутри (или оставить нули). 
     //!А потом считывать от [0] элемента до [max_size-message_deltas[i]].
     
     
     printf("Выделение памяти под сообщение. \n");
+    
+    //!Выделение динамической памяти под полное сообщение.
+    char *message_full = malloc (max_size*sizeof(char));
+    
+    //!Заполнение полного сообщения псевдорандомными символами.
+    ///ASCII_START 32, ASCII_END 126
+    for (int i = 0; i < max_size; i++)
+    {
+        message_full[i] = (char) (random() % (126-32))+32;
+    }
+    message_full[max_size] = '\0'; //Терминация.
+    
+    printf("Вход в цикл отправки одной пачки. \n");
+    //printf("settings.pack_size %i \n", settings.pack_size);
+    
+    
+    //!!!НЕ РАБОТАЕТ?!
+    //!Цикл по settings.pack_size на отправку ОДНОЙ "пачки" пакетов.
+    //int delta, di = 0; //Временные переменные для цикла.
+    int di = 0; //Счётчик итерации для дельт.
+    for (int i = 0; i == settings.pack_size; i++)
+    {
+        printf("%i-я итерация цикла. \n", i);
+        fprintf(log, "%s %i", "%i-я итерация цикла. \n", i);
+        
+        /**Считывание значения -дельты из message_deltas,
+        //"откусывание" от полного сообщения
+        //и запись в поле структуры. Вычисление и запись в поле 
+        //структуры размера кропнутого сообщения.
+        //Проверять маркер цикла считывания на выход за размер settings.num_deltas.
+        **/
+        
+        if (di > settings.num_deltas)
+            {
+                di = 0; //Если дельт больше, чем пакетов в пачке, то с начала.
+            }
+        
+        
+        //delta = message_deltas[di]; //Временная di-ая дельта.
+        
+        //В конце считывания дельт.
+        //di++;
+        
+        //Размер кропнутого сообщения.
+        //message_struct.mes_size = max_size - delta;
+        message_struct.mes_size = max_size - message_deltas[di];
+        
+        //В конце считывания дельт инкремент счётчика.
+        di++;
+        
+        //Запись кропнутого сообщения в поле структуры.
+        for (int j = 0; j < message_struct.mes_size; j++)
+            {
+                message_struct.message[j] = message_full[j];
+            }
+            message_struct.message[message_struct.mes_size] = '\0';
+        
+        //Отладка.
+        printf("Message from struct: %s \n", message_struct.message);
+        printf("Size of message from struct: %i \n",\
+        message_struct.mes_size);
+        
+        //!Вызов ф-ции отправки.
+        printf("Вызов функции отправки. \n");
+    
+        /* Вызываем функцию отправки. 
+         * Потом в цикле с сообщениями, обрезанными по -дельтам 
+         * от одного максимального сообщения. 
+         */
+        //int udp_send = udp_sender (udp_socket, *message);
+        //int udp_send = udp_sender (udp_socket, message);
+        int udp_send = udp_sender (udp_socket, message_struct);
+        
+        //!Зануление полей структуры. (Не обязательно)
+        
+    }
+    
+    
+    /**
+    //Для обычного сообщения.
     char message0 [max_size];
     //char *message [max_size];
     //char *message;
@@ -130,6 +213,7 @@ int main (int argc, char *argv[])
     printf("Создание сообщения. \n");
     //Создание сообщения.
     //char *message0 = NULL;
+    
     //for (int i = 0; i <= size; i++)
     for (int i = 0; i < max_size; i++)
         {
@@ -141,42 +225,25 @@ int main (int argc, char *argv[])
     
     //printf("Message0 from main: %s \n", message0);
     
+    
+    
     //Заполняем структуру сообщения.
-    message_struct.message = message0;
+    message_struct.message = message_full;
     message_struct.mes_size = mes_size;
-    
-    //Отладка.
-    printf("Message from struct: %s \n", message_struct.message);
-    printf("Size of message from struct: %i \n", message_struct.mes_size);
+    **/
     
     
     
-    //Забиваем нулями сообщение.
-    //memset(&message, 0, max_size);
-    
-    //Или сразу инициализируем пустое сообщение (с нулями).
-    //char message[max_size] = ""; //А вот фиг там! Компилятору не нравится инициализировать объект, зависящий от переменной.
-    //Надо динамически выделять память.
-    
-    //Запись в структуру параметров сообщения.
-    //message_params.size = settings.size; //Заменить потом на sizeof(message);
     
     
-    printf("Вызов функции отправки. \n");
-    
-    /* Вызываем функцию отправки. 
-     * Потом в цикле с сообщениями, обрезанными по -дельтам 
-     * от одного максимального сообщения. 
-     */
-    //int udp_send = udp_sender (udp_socket, *message);
-    //int udp_send = udp_sender (udp_socket, message);
-    int udp_send = udp_sender (udp_socket, message_struct);
     
     printf("Закрытие сокета. \n");
     
     //Закрытие сокета.
     int udp_close = udp_closer (udp_socket);
 
+    //!Очистка динамической памяти под полное сообщение.
+    free(message_full);
 
     //Отладка.
     printf("*DEBUG* \n" \
@@ -185,6 +252,9 @@ int main (int argc, char *argv[])
             "*DEBUG* \n",\
             settings.url, settings.port, settings.max_size,\
             settings.buffsize, settings.protocol, settings.procnum);
+            
+    //Закрытие файла лога.
+    fclose(log);
     
     return 0;
 }
