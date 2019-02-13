@@ -3,7 +3,7 @@
  * 
  * Заголовочный файл для парсера командной строки.
  * 
- * v.1.1.3.4a от 12.02.19.
+ * v.1.1.3.5a от 12.02.19.
  */
  
 /**
@@ -73,6 +73,7 @@ struct Settings
     char *url;
     char *port;
     int  max_size;
+    int  num_deltas;
     int  buffsize;
     int  protocol;
     int  procnum;

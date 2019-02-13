@@ -5,7 +5,7 @@
  * Для парсинга конфигурационного ini файла используется 
  * сторонний модуль minIni.
  * 
- * v.1.1.3.4a от 12.02.19.
+ * v.1.1.3.6a от 12.02.19.
  */
 
 /**
@@ -78,7 +78,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 //#define URL_LEN 500
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.1.4.2a";
+const char *argp_program_version = "v.1.1.4.4a";
 
 //Функция парсера.
 /*
@@ -116,7 +116,8 @@ const char config[] = "config.ini";
 
 
 //Внутренние переменные со значениями из конфиг-файла.
-int  max_size; //Размер пакета.
+int  max_size; //Максимальный размер сообщения (+ к размеру пакета).
+int  num_deltas;
 int  buffsize; //Размер буффера передачи.
 //char *protocol; //Протокол.
 int  protocol; //Протокол.
@@ -151,6 +152,7 @@ struct Settings parser (int argc, char *argv[])
 {
     //Считываем настройки по-умолчанию из конфигурационного файла.
     max_size = ini_getl("General", "MaxSize", -1, config);
+    num_deltas = ini_getl("General", "NumDeltas", -1, config);
     buffsize = ini_getl("General", "BuffSize", -1, config);
     protocol = ini_getl("General", "Protocol", -1, config); //* не раб.
     procnum = ini_getl("General", "ProcNum", -1, config);
@@ -249,6 +251,7 @@ struct Settings parser (int argc, char *argv[])
     settings.port = port;
     
     settings.max_size = max_size;
+    settings.num_deltas = num_deltas;
     settings.buffsize = buffsize;
     settings.protocol = protocol;
     settings.procnum = procnum;

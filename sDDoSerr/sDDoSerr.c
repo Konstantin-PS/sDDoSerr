@@ -3,7 +3,7 @@
  * 
  * Основной модуль программы.
  * 
- * v.1.1.4.2a от 12.02.19.
+ * v.1.1.4.4a от 12.02.19.
  * !Не забывать изменять *argp_program_version под новую версию в парсере!
  */
 
@@ -65,14 +65,12 @@ sDDoSerr Copyright © 2019 Константин Панков
  **/
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include "cmd_parser.h"
 #include "udp_sender.h"
 
-//char *message; //!Надо (глобально) выделить память.
-//char message [];
-
 int main (int argc, char *argv[])
-//int main ()
 {
     //Запуск моей функции сдвоенного парсера и получение на выходе
     //структуры со всеми настройками программы.
@@ -91,6 +89,38 @@ int main (int argc, char *argv[])
     
     //Структура сообщения.
     struct Message message_struct;
+    
+    //Массив из рандомных -дельт от максимальной длины сообщения.
+    int message_deltas[settings.num_deltas];
+    //printf("Sizeof message_deltas: %i \n", sizeof(message_deltas));
+    
+    //Инициализация генератора псевдорандомных чисел 
+    //(тут seed - текущее время).
+    
+    //time_t t;
+    //srand((unsigned) time(&t));
+    
+    //srand(time(0));
+    srandom(time(0));
+    
+    printf("\n"); //! Отладка. Убрать.
+    //Заполнение массива -дельт псевдорандомными числами.
+    for (int j = 0; j <= settings.num_deltas; j++)
+        {
+            //message_deltas[j] = rand() % max_size-1; //От 0 до % максимум-1.
+            message_deltas[j] = random() % max_size-1; //От 0 до % максимум-1.
+       //Т.е. при задании .. % 50 будут генерироваться числа от 0 до 49.
+       
+            //!Дебажный вывод содержимого массива. УБРАТЬ!
+            printf("Message_deltas [%i]: %d \n", j, message_deltas[j]);
+            //printf("Message_deltas0 [%i]: %d \n", j, random() % max_size-1);
+        }
+    printf("\n"); //! Отладка. Убрать.
+    
+    
+    //!Переделать сообщение под рандомный мусор внутри (или оставить нули). 
+    //!А потом считывать от [0] элемента до [max_size-message_deltas[i]].
+    
     
     printf("Выделение памяти под сообщение. \n");
     char message0 [max_size];
@@ -115,6 +145,7 @@ int main (int argc, char *argv[])
     message_struct.message = message0;
     message_struct.mes_size = mes_size;
     
+    //Отладка.
     printf("Message from struct: %s \n", message_struct.message);
     printf("Size of message from struct: %i \n", message_struct.mes_size);
     
@@ -125,7 +156,7 @@ int main (int argc, char *argv[])
     
     //Или сразу инициализируем пустое сообщение (с нулями).
     //char message[max_size] = ""; //А вот фиг там! Компилятору не нравится инициализировать объект, зависящий от переменной.
-    
+    //Надо динамически выделять память.
     
     //Запись в структуру параметров сообщения.
     //message_params.size = settings.size; //Заменить потом на sizeof(message);
@@ -133,8 +164,10 @@ int main (int argc, char *argv[])
     
     printf("Вызов функции отправки. \n");
     
-    //Вызываем функцию отправки. Потом в цикле с сообщениями из 
-    //предварительно сгенерированного массива.
+    /* Вызываем функцию отправки. 
+     * Потом в цикле с сообщениями, обрезанными по -дельтам 
+     * от одного максимального сообщения. 
+     */
     //int udp_send = udp_sender (udp_socket, *message);
     //int udp_send = udp_sender (udp_socket, message);
     int udp_send = udp_sender (udp_socket, message_struct);

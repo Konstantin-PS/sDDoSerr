@@ -1,2 +1,2 @@
 # sDDoSerr
-The shrew (D)DoS attack program
+sDDoSerr - the programm for simulate shrew (D)DoS attack.
