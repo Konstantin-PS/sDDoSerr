@@ -3,7 +3,7 @@
  * 
  * Основной модуль программы.
  * 
- * v.1.1.5.5a от 13.02.19.
+ * v.1.1.5.6a от 18.02.19.
  * !Не забывать изменять *argp_program_version под новую версию в парсере!
  */
 
@@ -142,11 +142,10 @@ int main (int argc, char *argv[])
     //printf("settings.pack_size %i \n", settings.pack_size);
     
     
-    //!!!НЕ РАБОТАЕТ?!
     //!Цикл по settings.pack_size на отправку ОДНОЙ "пачки" пакетов.
     //int delta, di = 0; //Временные переменные для цикла.
     int di = 0; //Счётчик итерации для дельт.
-    for (int i = 0; i == settings.pack_size; i++)
+    for (int i = 0; i <= settings.pack_size; i++)
     {
         printf("%i-я итерация цикла. \n", i);
         fprintf(log, "%s %i", "%i-я итерация цикла. \n", i);
@@ -176,12 +175,11 @@ int main (int argc, char *argv[])
         //В конце считывания дельт инкремент счётчика.
         di++;
         
-        //Запись кропнутого сообщения в поле структуры.
-        for (int j = 0; j < message_struct.mes_size; j++)
-            {
-                message_struct.message[j] = message_full[j];
-            }
-            message_struct.message[message_struct.mes_size] = '\0';
+        printf("Запись кропнутого сообщения в поле структуры \n");
+        //Запись кропнутого сообщения в поле структуры, а точнее,
+        //указателя на начало полного сообщения и кропнутый размер.
+        message_struct.message = message_full;
+        message_struct.message[message_struct.mes_size] = '\0';
         
         //Отладка.
         printf("Message from struct: %s \n", message_struct.message);
