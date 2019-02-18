@@ -3,7 +3,7 @@
  * 
  * Модуль отправки UDP пакетов.
  * 
- * v.1.0.3.3a от 12.02.19.
+ * v.1.0.3.5a от 18.02.19.
  */
  
 /**
@@ -81,20 +81,17 @@ sDDoSerr Copyright © 2019 Константин Панков
 //Декларация структуры сокета.
 struct Socket udp_socket;
 
-//Переменная под сообщение.
-//char *message;
 
-//Надо бы делать в классе. А в голом C нет классов.
-
-//Функция отправки пакетов.
+//Функция создания и открытия сокета.
 struct Socket udp_socket_open (struct Settings settings)
 {
     //Получаем параметры работы из структуры settings от парсера.
     //int  BUF_SIZE = settings.buffsize; //Размер буффера отправки.
-    char *url = settings.url;
-    char *port = settings.port;
+    ///char *url = settings.url;
+    ///char *port = settings.port;
     //int  size = settings.size;
-    ///int  protocol = settings.protocol;
+    
+    //int  protocol = settings.protocol;
     
     //char buf[BUF_SIZE]; //Буффер. А он не нужен, если не считывать ответ.
     
@@ -124,9 +121,12 @@ struct Socket udp_socket_open (struct Settings settings)
     
     
     //Получаем информацию о хосте по подсказкам и записываем в host_info.
-    if (status = getaddrinfo(url, port, &hints, &host_info) != 0)
+    ///if (status = getaddrinfo(url, port, &hints, &host_info) != 0)
+    if (status = getaddrinfo(settings.url, settings.port,\
+    &hints, &host_info) != 0)
     //Вывод ошибок.
         {
+            printf("URL: %s \n", settings.url);
             fprintf(stderr, "getaddrinfo: %s \n", gai_strerror(status));
             exit(EXIT_FAILURE);
         }
@@ -150,7 +150,7 @@ struct Socket udp_socket_open (struct Settings settings)
             continue;
             
             if (connect(sock, ht->ai_addr, ht->ai_addrlen) != -1)
-            break;                  // Успех
+            break;  //Успешное соединение.
 
             close(sock); //Закрытие сокета, если не получилось.
         }
@@ -174,14 +174,14 @@ struct Socket udp_socket_open (struct Settings settings)
     
     //Освобождаем память.
     freeaddrinfo(host_info);
-    //freeaddrinfo(ht); //Не надо чистить, т.к. это указатель на уже очищенную память.
+    //freeaddrinfo(ht); //Не надо чистить, 
+    //т.к. это указатель на уже очищенную память.
     
-    return udp_socket; //!Тут, возможно, теряется структура.
-    //Нужна структура с полями sock, size, hints.ai_addr;
+    return udp_socket;
  }
  
  
- //Функция отправки сообщения.
+ //Функция отправки сообщения (пакета).
  int udp_sender (struct Socket udp_socket, struct Message message_struct)
 {
     /*
@@ -217,9 +217,12 @@ struct Socket udp_socket_open (struct Settings settings)
         (struct sockaddr *)&udp_socket.address,\
         sizeof(udp_socket.address)) != message_struct.mes_size+1)
         {
+            
             fprintf(stderr,\
             "Ошибка / частичная запись в сокет. Записано: %i \n", stat);
-            exit(EXIT_FAILURE);
+            ///exit(EXIT_FAILURE);
+            
+            return 1;
         }
     
     //! С соединением до сюда.
@@ -228,6 +231,7 @@ return 0;
     
 }
 
+//Функция закрытия сокета.
 int udp_closer (struct Socket udp_socket)
 {
     int sock = udp_socket.sock;

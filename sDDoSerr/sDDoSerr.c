@@ -3,7 +3,7 @@
  * 
  * Основной модуль программы.
  * 
- * v.1.1.5.6a от 18.02.19.
+ * v.1.1.5.7a от 18.02.19.
  * !Не забывать изменять *argp_program_version под новую версию в парсере!
  */
 
@@ -135,6 +135,7 @@ int main (int argc, char *argv[])
     for (int i = 0; i < max_size; i++)
     {
         message_full[i] = (char) (random() % (126-32))+32;
+        //message_full[i] = '0'; //(или) Забивание нулями.
     }
     message_full[max_size] = '\0'; //Терминация.
     
@@ -181,6 +182,11 @@ int main (int argc, char *argv[])
         message_struct.message = message_full;
         message_struct.message[message_struct.mes_size] = '\0';
         
+        /** Вроде бы как отправляет, но принимается сообщение неправильно.
+          * Размер правильный, но содержимое неправильное.
+          * Возможно, проблема в сервере.
+        **/
+        
         //Отладка.
         printf("Message from struct: %s \n", message_struct.message);
         printf("Size of message from struct: %i \n",\
@@ -195,44 +201,30 @@ int main (int argc, char *argv[])
          */
         //int udp_send = udp_sender (udp_socket, *message);
         //int udp_send = udp_sender (udp_socket, message);
-        int udp_send = udp_sender (udp_socket, message_struct);
+        
+        ///int udp_send = udp_sender (udp_socket, message_struct);
+        int udp_send;
+        if (udp_send = udp_sender (udp_socket, message_struct) != 0)
+            {               
+                //Если при отправке сообщения что-то пошло не так.
+                printf("Ууупс. При отправке пакета что-то пошло не так. \n");
+                
+                //Очистка динамической памяти под полное сообщение.
+                free(message_full);
+                
+                //Закрытие сокета.
+                int udp_close = udp_closer (udp_socket);
+                
+                //Закрытие файла лога.
+                fclose(log);
+                
+                exit(EXIT_FAILURE);
+            }
+        
         
         //!Зануление полей структуры. (Не обязательно)
         
     }
-    
-    
-    /**
-    //Для обычного сообщения.
-    char message0 [max_size];
-    //char *message [max_size];
-    //char *message;
-    
-    printf("Создание сообщения. \n");
-    //Создание сообщения.
-    //char *message0 = NULL;
-    
-    //for (int i = 0; i <= size; i++)
-    for (int i = 0; i < max_size; i++)
-        {
-            message0[i] = '0';
-        }
-        message0[max_size] = '\0'; //Терминация последнего байта сообщения.
-    
-    int mes_size = sizeof (message0);
-    
-    //printf("Message0 from main: %s \n", message0);
-    
-    
-    
-    //Заполняем структуру сообщения.
-    message_struct.message = message_full;
-    message_struct.mes_size = mes_size;
-    **/
-    
-    
-    
-    
     
     
     printf("Закрытие сокета. \n");

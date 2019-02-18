@@ -5,7 +5,7 @@
  * Для парсинга конфигурационного ini файла используется 
  * сторонний модуль minIni.
  * 
- * v.1.1.4.8a от 18.02.19.
+ * v.1.1.4.9a от 18.02.19.
  */
 
 /**
@@ -78,7 +78,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 //#define URL_LEN 500
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.1.5.6a";
+const char *argp_program_version = "v.1.1.5.7a";
 
 //Функция парсера.
 /*
@@ -131,19 +131,6 @@ int  pack_size; //Количество пакетов в одной "пачке"
 * параметрами командной строки).
 */
 
-/*
-//В хэдере.
-//Структура настроек ("каркас").
-struct Settings {
-    //char url[URL_LEN]; //Для жёстко заданного размера.
-    char *url;
-    char *port;
-    int  max_size;
-    int  buffsize;
-    char *protocol;
-    int  procnum;
-    };
-*/
 
 //Декларация структуры настроек settings типа Settings.
 struct Settings settings;
