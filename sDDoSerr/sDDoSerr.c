@@ -3,7 +3,7 @@
  * 
  * Основной модуль программы.
  * 
- * v.1.1.5.7a от 18.02.19.
+ * v.1.1.5.10a от 24.02.19.
  * !Не забывать изменять *argp_program_version под новую версию в парсере!
  */
 
@@ -76,19 +76,24 @@ int main (int argc, char *argv[])
     FILE *log;
     log = fopen ("log.txt", "w+"); //Открытие файла. Поток log.
     
-    //Запуск моей функции сдвоенного парсера и получение на выходе
+    //Запуск функции сдвоенного парсера и получение на выходе
     //структуры со всеми настройками программы.
-    printf("Запуск функции парсера. \n");
+    //!printf("Запуск функции парсера. \n");
     struct Settings settings = parser (argc, argv);
+    if (settings.debug == 1) //Если установлен флаг дебага.
+        {printf("Запуск функции парсера выполнен. \n");}
     
-    printf("Запуск функции создания сокета. \n");
+    if (settings.debug == 1)
+        {printf("Запуск функции создания сокета. \n");}
     //Вызов функции отправщика пакетов с передачей ему структуры настроек.
     struct Socket udp_sock = udp_socket_open (settings);
     //int udp_sender = udp_sender(settings);
     //! НЕ РАБОТАЕТ с одинаковыми именами!
     
-    int max_size = settings.max_size; //Брать из массива с прегенерёнными значениями.
-    ///Или генерировать полные поля структуры. Но это может занимать слишком много памяти.
+    //!int max_size = settings.max_size; 
+    //Брать из массива с прегенерёнными значениями.
+    //Или генерировать полные поля структуры. 
+    //Но это может занимать слишком много памяти.
     
     
     //Структура сообщения.
@@ -107,49 +112,67 @@ int main (int argc, char *argv[])
     //srand(time(0));
     srandom(time(0));
     
-    printf("\n"); //! Отладка. Убрать.
+    if (settings.debug == 1)
+        {printf("Отладка. \n");} //! Отладка.
     //Заполнение массива -дельт псевдорандомными числами.
     for (int j = 0; j <= settings.num_deltas; j++)
         {
-            //message_deltas[j] = rand() % max_size-1; //От 0 до % максимум-1.
-            message_deltas[j] = random() % (max_size-1); //От 0 до % максимум-1.
-       //Т.е. при задании .. % 50 будут генерироваться числа от 0 до 49.
+            //message_deltas[j] = rand() % (settings.max_size-1);
+            message_deltas[j] = random() % (settings.max_size-1); 
+            //От 0 до % максимум-1.
+    //Т.е. при задании .. % 50 будут генерироваться числа от 0 до 49.
        
-            //!Дебажный вывод содержимого массива. УБРАТЬ!
-            printf("Message_deltas [%i]: %d \n", j, message_deltas[j]);
-            //printf("Message_deltas0 [%i]: %d \n", j, random() % max_size-1);
+            //!Дебажный вывод содержимого массива.
+            if (settings.debug == 1)
+                {printf("Message_deltas [%i]: %d \n", j, message_deltas[j]);}
+            //printf("Message_deltas0 [%i]: %d \n", j, random() % settings.max_size-1);
         }
-    printf("\n"); //! Отладка. Убрать.
+    if (settings.debug == 1)
+        {printf("\n");} //! Отладка.
     
     
     //!А потом считывать от [0] элемента до [max_size-message_deltas[i]].
     
     
-    printf("Выделение памяти под сообщение. \n");
+    if (settings.debug == 1)
+        {printf("Выделение памяти под сообщение. \n");}
     
     //!Выделение динамической памяти под полное сообщение.
-    char *message_full = malloc (max_size*sizeof(char));
+    char *message_full = malloc (settings.max_size*sizeof(char));
     
     //!Заполнение полного сообщения псевдорандомными символами.
     ///ASCII_START 32, ASCII_END 126
-    for (int i = 0; i < max_size; i++)
+    for (int i = 0; i < settings.max_size; i++)
     {
         message_full[i] = (char) (random() % (126-32))+32;
         //message_full[i] = '0'; //(или) Забивание нулями.
     }
-    message_full[max_size] = '\0'; //Терминация.
+    //!message_full[max_size] = '\0'; //Терминация.
     
-    printf("Вход в цикл отправки одной пачки. \n");
+    //Вывод нетерминированного сообщения.
+    if (settings.debug == 1)
+        {printf("Полное сообщение: %.*s \n", settings.max_size,\
+            message_full);}
+            
+    if (settings.debug == 1)
+        {printf("Вход в цикл отправки одной пачки. \n");}
     //printf("settings.pack_size %i \n", settings.pack_size);
     
     
     //!Цикл по settings.pack_size на отправку ОДНОЙ "пачки" пакетов.
+    
+    //Запись указателя на начало сообщения. 
+    message_struct.message = message_full;
+    
     //int delta, di = 0; //Временные переменные для цикла.
     int di = 0; //Счётчик итерации для дельт.
     for (int i = 0; i <= settings.pack_size; i++)
     {
-        printf("%i-я итерация цикла. \n", i);
-        fprintf(log, "%s %i", "%i-я итерация цикла. \n", i);
+        if (settings.debug == 1)
+            {
+                printf("%i-я итерация цикла. \n", i);
+                fprintf(log, "%s %i", "%i-я итерация цикла. \n", i);
+            }
         
         /**Считывание значения -дельты из message_deltas,
         //"откусывание" от полного сообщения
@@ -166,34 +189,39 @@ int main (int argc, char *argv[])
         
         //delta = message_deltas[di]; //Временная di-ая дельта.
         
-        //В конце считывания дельт.
-        //di++;
-        
         //Размер кропнутого сообщения.
         //message_struct.mes_size = max_size - delta;
-        message_struct.mes_size = max_size - message_deltas[di];
+        message_struct.mes_size = settings.max_size - message_deltas[di];
         
         //В конце считывания дельт инкремент счётчика.
         di++;
         
-        printf("Запись кропнутого сообщения в поле структуры \n");
+        if (settings.debug == 1)
+            {printf("Запись кропнутого сообщения в поле структуры \n");}
         //Запись кропнутого сообщения в поле структуры, а точнее,
         //указателя на начало полного сообщения и кропнутый размер.
-        message_struct.message = message_full;
-        message_struct.message[message_struct.mes_size] = '\0';
         
-        /** Вроде бы как отправляет, но принимается сообщение неправильно.
-          * Размер правильный, но содержимое неправильное.
-          * Возможно, проблема в сервере.
-        **/
+        //! Указатель можно отравлять только один раз, т.к. он не изменяется.
+        //! message_struct.message = message_full;
+        
+        /**
+         * Терминация сообщения. 
+         * Этот нулевой байт надо очищать перед отправкой след. сообщения!
+         
+        message_struct.message[message_struct.mes_size] = '\0';
+         **/
         
         //Отладка.
-        printf("Message from struct: %s \n", message_struct.message);
-        printf("Size of message from struct: %i \n",\
-        message_struct.mes_size);
-        
+        if (settings.debug == 1)
+            {
+                printf("Message from struct: %.*s \n",\
+                message_struct.message);
+                printf("Size of message from struct: %i \n",\
+                message_struct.mes_size);
+            }
         //!Вызов ф-ции отправки.
-        printf("Вызов функции отправки. \n");
+        if (settings.debug == 1)
+            {printf("Вызов функции отправки. \n");}
     
         /* Вызываем функцию отправки. 
          * Потом в цикле с сообщениями, обрезанными по -дельтам 
@@ -222,12 +250,19 @@ int main (int argc, char *argv[])
             }
         
         
-        //!Зануление полей структуры. (Не обязательно)
+        //!Зануление полей структуры.
+        
+        //! Очистка поля сообщения для удаления теминации.
+        //Не требуется, при выводе без терминации.
+        //message_struct.message[message_struct.mes_size] = '0';
+        
         
     }
+    //Конец цикла на отправку одной "пачки" пакетов.
     
     
-    printf("Закрытие сокета. \n");
+    if (settings.debug == 1)
+        {printf("Закрытие сокета. \n");}
     
     //Закрытие сокета.
     int udp_close = udp_closer (udp_socket);
@@ -236,13 +271,16 @@ int main (int argc, char *argv[])
     free(message_full);
 
     //Отладка.
-    printf("*DEBUG* \n" \
+    if (settings.debug == 1)
+        {
+            printf("*DEBUG* \n" \
             "url = %s, port = %s, max_size = %i, buffsize = %i, "\
             "protocol = %s, procnum = %i \n" \
             "*DEBUG* \n",\
             settings.url, settings.port, settings.max_size,\
             settings.buffsize, settings.protocol, settings.procnum);
-            
+        }
+    
     //Закрытие файла лога.
     fclose(log);
     

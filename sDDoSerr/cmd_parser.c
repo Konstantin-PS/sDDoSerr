@@ -5,7 +5,7 @@
  * Для парсинга конфигурационного ini файла используется 
  * сторонний модуль minIni.
  * 
- * v.1.1.4.9a от 18.02.19.
+ * v.1.1.4.12a от 24.02.19.
  */
 
 /**
@@ -78,7 +78,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 //#define URL_LEN 500
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.1.5.7a";
+const char *argp_program_version = "v.1.1.5.10a";
 
 //Функция парсера.
 /*
@@ -123,6 +123,7 @@ int  buffsize; //Размер буффера передачи.
 int  protocol; //Протокол.
 int  procnum; //Количество процессов/потоков.
 int  pack_size; //Количество пакетов в одной "пачке", т.е. её размер.
+int  debug; //Флаг дебага. По умолчанию 0 - выкл.; 1 - вкл.
 
 
 /* 
@@ -145,6 +146,7 @@ struct Settings parser (int argc, char *argv[])
     protocol = ini_getl("General", "Protocol", -1, config); //* не раб.
     procnum = ini_getl("General", "ProcNum", -1, config);
     pack_size = ini_getl("General", "NumOfPacketsInPack", -1, config);
+    debug = ini_getl("General", "Debug", -1, config);
     
     
     
@@ -164,10 +166,23 @@ struct Settings parser (int argc, char *argv[])
     //Структура с параметрами работы парсера.
     struct argp_option options[] =
     {
-        {"url", 'u', "URL", 0, "URL"},
+        {"url", 'u', "URL", 0, "URL or IP"},
         {"port", 'p', "PORT", 0, "Port"},
+        {"debug", 'd', 0, 0,\
+            "Debug flag. Print debug messages: 0 - off, 1 - on."},
         {0}
     };
+    
+    /**
+     * Пример одного поля структуры.
+     * {"имя", 'ключ', "значение", опция, "подсказка"},
+     * Для использования только полного имени ключ записать как 
+     * простое число (и в case так же).
+     * Для использования без параметра в поле "значение" записать 0.
+     * Можно скрыть ключ и всё с ним связанное из хелпа установив
+     * опцию OPTION_HIDDEN.
+     * Ещё есть опция OPTION_ARG_OPTIONAL для опциональных ключей.
+     **/
        
      
     //Функция парсера командной строки.
@@ -215,7 +230,14 @@ struct Settings parser (int argc, char *argv[])
                 //printf("Port = %i \n", port);
                 
                 break;
-            }        
+            }
+            
+        case 'd':
+            {
+                debug = 1;
+                break;
+            }
+        
         }
     
     return 0;
@@ -246,6 +268,7 @@ struct Settings parser (int argc, char *argv[])
     settings.protocol = protocol;
     settings.procnum = procnum;
     settings.pack_size = pack_size;
+    settings.debug = debug;
     
     //return 0;
     return settings; //Возвращаем структуру со всеми настройками, 

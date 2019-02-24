@@ -3,7 +3,7 @@
  * 
  * Модуль отправки UDP пакетов.
  * 
- * v.1.0.3.5a от 18.02.19.
+ * v.1.0.3.7a от 24.02.19.
  */
  
 /**
@@ -74,9 +74,6 @@ sDDoSerr Copyright © 2019 Константин Панков
 #include "cmd_parser.h" //Для структуры настроек.
 #include "udp_sender.h"
 
-//#define BUF_SIZE 500 //В хэдере. 
-//Но надо переделать под получение из settings. 
-//Не нужно, если без получения.
 
 //Декларация структуры сокета.
 struct Socket udp_socket;
@@ -87,11 +84,7 @@ struct Socket udp_socket_open (struct Settings settings)
 {
     //Получаем параметры работы из структуры settings от парсера.
     //int  BUF_SIZE = settings.buffsize; //Размер буффера отправки.
-    ///char *url = settings.url;
-    ///char *port = settings.port;
-    //int  size = settings.size;
-    
-    //int  protocol = settings.protocol;
+    //Не нужен, если без получения.
     
     //char buf[BUF_SIZE]; //Буффер. А он не нужен, если не считывать ответ.
     
@@ -170,7 +163,8 @@ struct Socket udp_socket_open (struct Settings settings)
     udp_socket.address = *host_info -> ai_addr;
     //udp_socket.address = *hints.ai_addr; //Отдаёт как есть.
     
-    printf("udp_socket.address: %ld \n", udp_socket.address);
+    if (settings.debug == 1)
+        {printf("udp_socket.address: %ld \n", udp_socket.address);}
     
     //Освобождаем память.
     freeaddrinfo(host_info);
@@ -183,39 +177,28 @@ struct Socket udp_socket_open (struct Settings settings)
  
  //Функция отправки сообщения (пакета).
  int udp_sender (struct Socket udp_socket, struct Message message_struct)
-{
-    /*
-     * Нечего разбрасываться памятью под новые переменные,
-     * если они дублирующие!
-     * 
-    int sock = udp_socket.sock;
-    struct sockaddr address = udp_socket.address;
-    
-    char *message = message_struct.message;
-    //int size = sizeof(message); //Не работает так.
-    int size = message_struct.mes_size;
-    */
-    
+{    
     //Отправка пакетов (датаграмм).
     int stat = 0;
     
-    printf("Message from udp_sender: %s \n", message_struct.message);
+    if (settings.debug == 1)
+    {
+    //printf("Message from udp_sender: %s \n", message_struct.message);
+    printf("Message from udp_sender: %.*s \n", message_struct.mes_size,\
+    message_struct.message);
+    }
     
     /**
-    if (stat = sendto(sock, &message, size+1, 0, \
-        //(struct sockaddr *)&host, sizeof(host)) != size)
-        (struct sockaddr *)&address, sizeof(address)) != size+1)
-        {
-            fprintf(stderr, "Ошибка / частичная запись в сокет. Записано: %i \n", stat);
-            exit(EXIT_FAILURE);
-        }
-    //size+1
-    **/
-    
+    //Для терминированного сообщения.
     if (stat = sendto(udp_socket.sock, message_struct.message,\
         message_struct.mes_size+1, 0,\
         (struct sockaddr *)&udp_socket.address,\
         sizeof(udp_socket.address)) != message_struct.mes_size+1)
+    **/
+    if (stat = sendto(udp_socket.sock, message_struct.message,\
+        message_struct.mes_size, 0,\
+        (struct sockaddr *)&udp_socket.address,\
+        sizeof(udp_socket.address)) != message_struct.mes_size)
         {
             
             fprintf(stderr,\
