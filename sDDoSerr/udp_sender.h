@@ -1,15 +1,15 @@
-/* 
- * sDDoSerr - the programm for simulate shrew (D)DoS attack.
- * 
- * Заголовочный файл для модуля отправки UDP пакетов.
- * 
- * v.1.0.2.3a от 01.02.19.
- */
+/** 
+  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
+  * 
+  * Заголовочный файл для модуля отправки UDP пакетов.
+  * 
+  * v.1.0.2.4a от 31.03.19.
+  **/
 
 /**
     This file is part of sDDoSerr.
-sDDoSerr is a research program for emulating shrew (D)DoS traffic and
-its analysis (in development).
+sDDoSerr is a research program for emulating shrew (D)DoS traffic 
+(in development).
 Use this program on your own pril and risk, as with improper use 
 there is a risk of disruption of the network infrastucture.
 DDoSerr Copyright © 2019 Konstantin Pankov 
@@ -23,7 +23,7 @@ DDoSerr Copyright © 2019 Konstantin Pankov
     Any distribution and / or change must be agreed with the authors and
     is prohibited without their permission.
     At this stage of the program development, authors are forbidden to 
-    embed any of DDoSerr modules (code components) into other programs.
+    embed any of sDDoSerr modules (code components) into other programs.
 
     sDDoSerr is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -36,7 +36,7 @@ DDoSerr Copyright © 2019 Konstantin Pankov
 
     Этот файл — часть sDDoSerr.
 sDDoSerr — это исследовательская программа для эмуляции "shrew" (D)DoS 
-трафика и его анализа (в разработке). 
+трафика (в разработке). 
 Используйте эту программу на свой страх и риск, так как при неправильном
 применении есть риск нарушения работы сетевой инфраструктуры.
 sDDoSerr Copyright © 2019 Константин Панков 
@@ -51,7 +51,7 @@ sDDoSerr Copyright © 2019 Константин Панков
    Любое распространиение и/или изменение должно быть согласовано с
    авторами и запрещается без их разрешения.
    На данном этапе развития программы авторами запрещается встраивать 
-   любой из модулей (компонентов кода) DDoSerr в другие программы.
+   любой из модулей (компонентов кода) sDDoSerr в другие программы.
 
    sDDoSerr распространяется в надежде, что она будет полезной,
    но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
@@ -66,18 +66,11 @@ sDDoSerr Copyright © 2019 Константин Панков
 #ifndef UDP_SENDER_H
 #define UDP_SENDER_H
 
-//#include "cmd_parser.h" //Или надо.
-
-//#define BUF_SIZE 500
-
 #include <sys/socket.h>
 
 struct Socket 
     {
         int sock;
-        //int size;
-        //long address;
-        //int address;
         struct sockaddr address;
     };
 
@@ -85,18 +78,8 @@ struct Socket udp_socket;
 
 struct Socket udp_socket_open (struct Settings settings);
 
-//char *message;
 
-//int udp_sender (struct Socket udp_socket, char message); //Полная ерунда.
-
-//int udp_sender (struct Socket udp_socket, char message []); //Ерунда, но получше.
-//int udp_sender (struct Socket udp_socket, char *message); //Ерунда, похуже.
-
-
-//int udp_sender (struct Socket udp_socket, char (*message)[]);
-
-
-//"Каркас" структуры сообщения (из main).
+/* "Каркас" структуры сообщения (из main). */
 struct Message
 {
     char *message;
@@ -105,10 +88,6 @@ struct Message
 
 int udp_sender (struct Socket udp_socket, struct Message message);
 
-
 int udp_closer (struct Socket udp_socket);
-
-
-
 
 #endif

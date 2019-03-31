@@ -1,15 +1,15 @@
-/* 
- * sDDoSerr - the programm for simulate shrew (D)DoS attack.
- * 
- * Модуль отправки UDP пакетов.
- * 
- * v.1.0.3.7a от 24.02.19.
- */
+/**
+  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
+  * 
+  * Модуль отправки UDP пакетов.
+  * 
+  * v.1.0.3.8a от 31.03.19.
+  **/
  
 /**
     This file is part of sDDoSerr.
-sDDoSerr is a research program for emulating shrew (D)DoS traffic and
-its analysis (in development).
+sDDoSerr is a research program for emulating shrew (D)DoS traffic 
+(in development).
 Use this program on your own pril and risk, as with improper use 
 there is a risk of disruption of the network infrastucture.
 DDoSerr Copyright © 2019 Konstantin Pankov 
@@ -23,7 +23,7 @@ DDoSerr Copyright © 2019 Konstantin Pankov
     Any distribution and / or change must be agreed with the authors and
     is prohibited without their permission.
     At this stage of the program development, authors are forbidden to 
-    embed any of DDoSerr modules (code components) into other programs.
+    embed any of sDDoSerr modules (code components) into other programs.
 
     sDDoSerr is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -36,7 +36,7 @@ DDoSerr Copyright © 2019 Konstantin Pankov
 
     Этот файл — часть sDDoSerr.
 sDDoSerr — это исследовательская программа для эмуляции "shrew" (D)DoS 
-трафика и его анализа (в разработке). 
+трафика (в разработке). 
 Используйте эту программу на свой страх и риск, так как при неправильном
 применении есть риск нарушения работы сетевой инфраструктуры.
 sDDoSerr Copyright © 2019 Константин Панков 
@@ -51,7 +51,7 @@ sDDoSerr Copyright © 2019 Константин Панков
    Любое распространиение и/или изменение должно быть согласовано с
    авторами и запрещается без их разрешения.
    На данном этапе развития программы авторами запрещается встраивать 
-   любой из модулей (компонентов кода) DDoSerr в другие программы.
+   любой из модулей (компонентов кода) sDDoSerr в другие программы.
 
    sDDoSerr распространяется в надежде, что она будет полезной,
    но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
@@ -75,46 +75,44 @@ sDDoSerr Copyright © 2019 Константин Панков
 #include "udp_sender.h"
 
 
-//Декларация структуры сокета.
+/* Декларация структуры сокета. */
 struct Socket udp_socket;
 
 
-//Функция создания и открытия сокета.
+/* Функция создания и открытия сокета. */
 struct Socket udp_socket_open (struct Settings settings)
 {
-    //Получаем параметры работы из структуры settings от парсера.
-    //int  BUF_SIZE = settings.buffsize; //Размер буффера отправки.
-    //Не нужен, если без получения.
+    /* Получаем параметры работы из структуры settings от парсера. */
     
-    //char buf[BUF_SIZE]; //Буффер. А он не нужен, если не считывать ответ.
+    /* Временная переменная статуса
+     * для отслеживания статуса выполнения getaddrinfo(). */
+    int status; 
     
-    int status; //Временная переменная статуса 
-    //для отслеживания статуса выполнения getaddrinfo().
     
-    //Структура параметров сокета типа addrinfo по имени hints.
+    /* Структура параметров сокета типа addrinfo по имени hints. */
     struct addrinfo hints;
     struct addrinfo *host_info, *ht; //Указатель на информацию о хосте и 
                                     //временный указатель для этого.
     
-    int sock; //Сокет.
+    /* Сокет. */
+    int sock;
     
     
     //! С соединённым сокетом.
     
-    //Получаем адрес(ы), подходящие под адрес хоста и порт.
-    //Забиваем нулями все поля структуры hints.
+    /* Получаем адрес(ы), подходящие под адрес хоста и порт. */
+    /* Забиваем нулями все поля структуры hints. */
     memset(&hints, 0, sizeof(struct addrinfo));
     
-    //Заполняем структуру "подсказок" - параметров создания сокета.
+    /* Заполняем структуру "подсказок" - параметров создания сокета. */
     hints.ai_family = AF_UNSPEC;    // Разрешает IPv4 or IPv6.
     hints.ai_socktype = SOCK_DGRAM; // Сокет датаграмм для UDP.
     hints.ai_flags = AI_NUMERICSERV;
-    //hints.ai_protocol = protocol;   // Протокол. 0 - любой.
     hints.ai_protocol = settings.protocol;   // Протокол. 0 - любой.
     
     
-    //Получаем информацию о хосте по подсказкам и записываем в host_info.
-    ///if (status = getaddrinfo(url, port, &hints, &host_info) != 0)
+    /* Получаем информацию о хосте по подсказкам 
+     * и записываем в host_info. */
     if (status = getaddrinfo(settings.url, settings.port,\
     &hints, &host_info) != 0)
     //Вывод ошибок.
@@ -156,7 +154,7 @@ struct Socket udp_socket_open (struct Settings settings)
         }
     
     
-    //Заполняем структуру сокета.
+    /* Заполняем структуру сокета. */
     udp_socket.sock = sock;
     //udp_socket.size = size;
     
@@ -166,7 +164,7 @@ struct Socket udp_socket_open (struct Settings settings)
     if (settings.debug == 1)
         {printf("udp_socket.address: %ld \n", udp_socket.address);}
     
-    //Освобождаем память.
+    /* Освобождаем память. */
     freeaddrinfo(host_info);
     //freeaddrinfo(ht); //Не надо чистить, 
     //т.к. это указатель на уже очищенную память.
@@ -175,26 +173,27 @@ struct Socket udp_socket_open (struct Settings settings)
  }
  
  
- //Функция отправки сообщения (пакета).
- int udp_sender (struct Socket udp_socket, struct Message message_struct)
+ /* Функция отправки сообщения (пакета). */
+ int udp_sender (struct Socket udp_socket,\
+ struct Message message_struct)
 {    
-    //Отправка пакетов (датаграмм).
+    /* Отправка пакетов (датаграмм). */
     int stat = 0;
     
     if (settings.debug == 1)
     {
-    //printf("Message from udp_sender: %s \n", message_struct.message);
-    printf("Message from udp_sender: %.*s \n", message_struct.mes_size,\
-    message_struct.message);
+        printf("Message from udp_sender: %.*s \n",\
+        message_struct.mes_size, message_struct.message);
     }
     
-    /**
+    /*
     //Для терминированного сообщения.
     if (stat = sendto(udp_socket.sock, message_struct.message,\
         message_struct.mes_size+1, 0,\
         (struct sockaddr *)&udp_socket.address,\
         sizeof(udp_socket.address)) != message_struct.mes_size+1)
-    **/
+    */
+    
     if (stat = sendto(udp_socket.sock, message_struct.message,\
         message_struct.mes_size, 0,\
         (struct sockaddr *)&udp_socket.address,\
@@ -203,8 +202,6 @@ struct Socket udp_socket_open (struct Settings settings)
             
             fprintf(stderr,\
             "Ошибка / частичная запись в сокет. Записано: %i \n", stat);
-            ///exit(EXIT_FAILURE);
-            
             return 1;
         }
     
@@ -214,7 +211,7 @@ return 0;
     
 }
 
-//Функция закрытия сокета.
+/* Функция закрытия сокета. */
 int udp_closer (struct Socket udp_socket)
 {
     int sock = udp_socket.sock;

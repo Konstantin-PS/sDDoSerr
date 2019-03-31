@@ -1,17 +1,17 @@
-/* 
- * sDDoSerr - the programm for simulate shrew (D)DoS attack.
- * 
- * Модуль парсера командной строки.
- * Для парсинга конфигурационного ini файла используется 
- * сторонний модуль minIni.
- * 
- * v.1.1.4.12a от 24.02.19.
- */
+/**
+  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
+  * 
+  * Модуль парсера командной строки.
+  * Для парсинга конфигурационного ini файла используется 
+  * сторонний модуль minIni.
+  * 
+  * v.1.1.5.16a от 31.03.19.
+  **/
 
 /**
     This file is part of sDDoSerr.
-sDDoSerr is a research program for emulating shrew (D)DoS traffic and
-its analysis (in development).
+sDDoSerr is a research program for emulating shrew (D)DoS traffic 
+(in development).
 Use this program on your own pril and risk, as with improper use 
 there is a risk of disruption of the network infrastucture.
 DDoSerr Copyright © 2019 Konstantin Pankov 
@@ -25,7 +25,7 @@ DDoSerr Copyright © 2019 Konstantin Pankov
     Any distribution and / or change must be agreed with the authors and
     is prohibited without their permission.
     At this stage of the program development, authors are forbidden to 
-    embed any of DDoSerr modules (code components) into other programs.
+    embed any of sDDoSerr modules (code components) into other programs.
 
     sDDoSerr is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -38,7 +38,7 @@ DDoSerr Copyright © 2019 Konstantin Pankov
 
     Этот файл — часть sDDoSerr.
 sDDoSerr — это исследовательская программа для эмуляции "shrew" (D)DoS 
-трафика и его анализа (в разработке). 
+трафика (в разработке). 
 Используйте эту программу на свой страх и риск, так как при неправильном
 применении есть риск нарушения работы сетевой инфраструктуры.
 sDDoSerr Copyright © 2019 Константин Панков 
@@ -53,7 +53,7 @@ sDDoSerr Copyright © 2019 Константин Панков
    Любое распространиение и/или изменение должно быть согласовано с
    авторами и запрещается без их разрешения.
    На данном этапе развития программы авторами запрещается встраивать 
-   любой из модулей (компонентов кода) DDoSerr в другие программы.
+   любой из модулей (компонентов кода) sDDoSerr в другие программы.
 
    sDDoSerr распространяется в надежде, что она будет полезной,
    но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
@@ -75,10 +75,9 @@ sDDoSerr Copyright © 2019 Константин Панков
 
 #include "cmd_parser.h"
 
-//#define URL_LEN 500
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.1.5.10a";
+const char *argp_program_version = "v.1.2.1.14a";
 
 //Функция парсера.
 /*
@@ -111,19 +110,20 @@ const char *argp_program_version = "v.1.1.5.10a";
  * будет задавать, но, скорее всего, кол-вом одновременных потоков.
  */
 
-//Конфигурационный файл.
+/* Конфигурационный файл. */
 const char config[] = "config.ini";
 
 
 //Внутренние переменные со значениями из конфиг-файла.
 int  max_size; //Максимальный размер сообщения (+ к размеру пакета).
 int  num_deltas;
-int  buffsize; //Размер буффера передачи.
 //char *protocol; //Протокол.
 int  protocol; //Протокол.
 int  procnum; //Количество процессов/потоков.
 int  pack_size; //Количество пакетов в одной "пачке", т.е. её размер.
-int  debug; //Флаг дебага. По умолчанию 0 - выкл.; 1 - вкл.
+long int start_pause; //Начальная пауза между отправкой \
+"пачек" пакетов, в мс.
+int  debug; //Флаг дебага. 0 - выкл.; 1 - вкл.; 2 - подробно.
 
 
 /* 
@@ -133,19 +133,19 @@ int  debug; //Флаг дебага. По умолчанию 0 - выкл.; 1 - 
 */
 
 
-//Декларация структуры настроек settings типа Settings.
+/* Декларация структуры настроек settings типа Settings. */
 struct Settings settings;
 
-//Сдвоенная функция считывания конфига и парсинга командной строки.
+/* Сдвоенная функция считывания конфига и парсинга командной строки. */
 struct Settings parser (int argc, char *argv[])
 {
-    //Считываем настройки по-умолчанию из конфигурационного файла.
+    /* Считываем настройки по-умолчанию из конфигурационного файла. */
     max_size = ini_getl("General", "MaxSize", -1, config);
     num_deltas = ini_getl("General", "NumDeltas", -1, config);
-    buffsize = ini_getl("General", "BuffSize", -1, config);
-    protocol = ini_getl("General", "Protocol", -1, config); //* не раб.
+    protocol = ini_getl("General", "Protocol", -1, config);
     procnum = ini_getl("General", "ProcNum", -1, config);
     pack_size = ini_getl("General", "NumOfPacketsInPack", -1, config);
+    start_pause = ini_getl("General", "StartPause", -1, config);
     debug = ini_getl("General", "Debug", -1, config);
     
     
@@ -159,19 +159,26 @@ struct Settings parser (int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
     
-    //Считываем и парсим аргументы командной строки.
+    /* Считываем и парсим аргументы командной строки. */
     char *url = NULL;
     char *port = NULL;
     
-    //Структура с параметрами работы парсера.
+    /* Структура с параметрами работы парсера. */
     struct argp_option options[] =
     {
         {"url", 'u', "URL", 0, "URL or IP"},
         {"port", 'p', "PORT", 0, "Port"},
-        {"debug", 'd', 0, 0,\
-            "Debug flag. Print debug messages: 0 - off, 1 - on."},
+        {"debug", 'd', "[0|1|2]", OPTION_HIDDEN,\
+        "Debug flag. Print debug messages: 0 - off, 1 - on, 2 - more"},
         {0}
     };
+    
+    /**
+     * !Костыль!
+     * Ключ дебага -d --debug скрыт, чтобы можно было запскать без него.
+     * Если установить опцию OPTION_ARG_OPTIONAL, то без ключа работает,
+     * а с ним вылетает ошибка сегментации.
+     **/
     
     /**
      * Пример одного поля структуры.
@@ -185,29 +192,22 @@ struct Settings parser (int argc, char *argv[])
      **/
        
      
-    //Функция парсера командной строки.
-    //static int parse_opt (int key, char *arg, struct argp_state *state)
+    /* Функция парсера командной строки. */
     int parse_opt (int key, char *arg, struct argp_state *state)
     {
     switch (key)
         {        
         case 'u':
             {
-                //strcpy(url, arg+'\0'); //Не работает.
-                //url = arg+'\0'; //Запись значения в переменную с 
-                //терминацией. Не работает? А надо ли?
                 url = arg; //Запись значения в переменную.
-                
-                //printf("URL = %s, strlen = %i \n", url, strlen(url));
-                //printf("URL = %s \n", url);
                 
                 break;
             }
         
         case 'p':
             {
-                //Проверка на наличие посторонних символов в 
-                //аргументе порта.
+                /* Проверка на наличие посторонних символов в 
+                 * аргументе порта. */
                 for (int i = 0; i < strlen(arg); i++)
                 {                    
                     //printf("код arg[i] = %i \n", arg[i]);
@@ -215,7 +215,7 @@ struct Settings parser (int argc, char *argv[])
                     if (isdigit(arg[i]) == 0)
                     {
                         fprintf(stderr, \
-                        "В порт введено что-то, кроме цифр! \n");
+                        "Неправильный порт! Вводите только цифры. \n");
                         //argp_failure (state, 1, 0, \
                         "В порт введено что-то, кроме цифр!");
                         exit(EXIT_FAILURE);
@@ -227,14 +227,25 @@ struct Settings parser (int argc, char *argv[])
                 //port = atoi(arg); //Перевод строки в число.
                 port = arg;
                 
-                //printf("Port = %i \n", port);
-                
                 break;
             }
             
         case 'd':
             {
-                debug = 1;
+                //debug = 1;
+                
+                for (int i = 0; i < strlen(arg); i++)
+                {                       
+                    if (isdigit(arg[i]) == 0)
+                    {
+                        fprintf(stderr, \
+                        "Неправильный флаг дебага! Введите число. \n");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                
+                debug = atoi(arg);
+                
                 break;
             }
         
@@ -242,61 +253,38 @@ struct Settings parser (int argc, char *argv[])
     
     return 0;
     }
-    //-----тип | имя-=--опции  , error_t  , char *args_doc, char *doc //69 стр.
+    
+    //69 стр.
+    //-----тип | имя-=--опции  , error_t  , char *args_doc, char *doc
     struct argp argp = {options, parse_opt, 0,\
-                        "Первая подсказка. \v" "Вторая подсказка."};
-    //! Сделать проверку и "защиту от дурака" + хелп!
+        "sDDoSerr - the research programm for emulate shrew \
+(D)DoS attack traffic. \n\
+DDoSerr Copyright © 2019 Konstantin Pankov, Mikhail Riapolov. \n\
+(e-mail: konstantin.p.96@gmail.com) \v" 
+"To exit the program, press 'q' (or 'Q', or 'й', or 'Й'). \n\
+Please wait for full completion of the program runtime after pressing \
+the exit button."};
+
     
-    argp_parse (&argp, argc, argv, 0, 0, 0); //Запуск парсера.
+    /* Запуск парсера. */
+    argp_parse (&argp, argc, argv, 0, 0, 0);
     
     
-    //Записываем конечные значения параметров в структуру.
+    /* Записываем конечные значения параметров в структуру. */
     
-    //settings.url[URL_LEN] = *url;
     //strcpy (settings.url, "url"); //Строки записывать таким образом.
     
-    //strcpy (settings.url, url); //Для жёстко заданного размера.
-    
     settings.url = url;
-    //printf("length settings.url = %i \n", strlen(settings.url)); //дебаг
-    
     settings.port = port;
-    
     settings.max_size = max_size;
     settings.num_deltas = num_deltas;
-    settings.buffsize = buffsize;
     settings.protocol = protocol;
     settings.procnum = procnum;
     settings.pack_size = pack_size;
+    settings.start_pause = start_pause;
     settings.debug = debug;
     
-    //return 0;
-    return settings; //Возвращаем структуру со всеми настройками, 
-                    //включая и переопределённые.
+    /* Возвращаем структуру со всеми настройками, 
+     * включая и переопределённые. */
+    return settings; 
 }
-
-/*-----Для отладки раскомментировать эту ф-ю main и скомпилировать.-----
-
-int main (int argc, char *argv[])
-{
-    //struct settings[];
-    //settings(url, port, size, buffsize, protocol, procnum) = parser (int argc, char *argv[]);
-    //int parser = parser ();
-    
-    //Запуск моей функции объединённого парсера и получение на выходе
-    //структуры со всеми настройками программы.
-    struct Settings settings = parser (argc, argv);
-    
-    
-    //Отладка.
-    
-    printf("*DEBUG* \n" \
-            "url = %s, port = %s, max_size = %i, buffsize = %i, "\
-            "protocol = %s, procnum = %i \n" \
-            "*DEBUG* \n",\
-            settings.url, settings.port, settings.size,\
-            settings.buffsize, settings.protocol, settings.procnum);
-    
-    return 0;
-}
-*/

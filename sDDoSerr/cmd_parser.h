@@ -1,15 +1,15 @@
-/*
- * sDDoSerr - the programm for simulate shrew (D)DoS attack.
- * 
- * Заголовочный файл для парсера командной строки.
- * 
- * v.1.1.4.7a от 24.02.19.
- */
+/**
+  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
+  * 
+  * Заголовочный файл для парсера командной строки.
+  * 
+  * v.1.1.4.8a от 31.03.19.
+  **/
  
 /**
     This file is part of sDDoSerr.
-sDDoSerr is a research program for emulating shrew (D)DoS traffic and
-its analysis (in development).
+sDDoSerr is a research program for emulating shrew (D)DoS traffic 
+(in development).
 Use this program on your own pril and risk, as with improper use 
 there is a risk of disruption of the network infrastucture.
 DDoSerr Copyright © 2019 Konstantin Pankov 
@@ -23,7 +23,7 @@ DDoSerr Copyright © 2019 Konstantin Pankov
     Any distribution and / or change must be agreed with the authors and
     is prohibited without their permission.
     At this stage of the program development, authors are forbidden to 
-    embed any of DDoSerr modules (code components) into other programs.
+    embed any of sDDoSerr modules (code components) into other programs.
 
     sDDoSerr is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -36,7 +36,7 @@ DDoSerr Copyright © 2019 Konstantin Pankov
 
     Этот файл — часть sDDoSerr.
 sDDoSerr — это исследовательская программа для эмуляции "shrew" (D)DoS 
-трафика и его анализа (в разработке). 
+трафика (в разработке). 
 Используйте эту программу на свой страх и риск, так как при неправильном
 применении есть риск нарушения работы сетевой инфраструктуры.
 sDDoSerr Copyright © 2019 Константин Панков 
@@ -51,7 +51,7 @@ sDDoSerr Copyright © 2019 Константин Панков
    Любое распространиение и/или изменение должно быть согласовано с
    авторами и запрещается без их разрешения.
    На данном этапе развития программы авторами запрещается встраивать 
-   любой из модулей (компонентов кода) DDoSerr в другие программы.
+   любой из модулей (компонентов кода) sDDoSerr в другие программы.
 
    sDDoSerr распространяется в надежде, что она будет полезной,
    но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
@@ -66,28 +66,23 @@ sDDoSerr Copyright © 2019 Константин Панков
 #ifndef CMD_PARSER_H
 #define CMD_PARSER_H
 
-//Другие модули должны знать только об структурах с настройками и 
-//функции сдвоенного парсера.
+/* Другие модули должны знать только об структурах с настройками и 
+ * функции сдвоенного парсера. */
 struct Settings 
     {
     char *url;
     char *port;
     int  max_size;
     int  num_deltas;
-    int  buffsize;
     int  protocol;
     int  procnum;
     int  pack_size;
+    long int start_pause;
     int  debug;
     };
 
 struct Settings settings;
 
 struct Settings parser (int argc, char *argv[]);
-
-//int parse_opt (int, char, struct argp_state);
-
-//struct argp argp;
-
 
 #endif
