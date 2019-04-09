@@ -3,7 +3,7 @@
   * 
   * Модуль отправки UDP пакетов.
   * 
-  * v.1.0.3.8a от 31.03.19.
+  * v.1.0.3.9a от 10.04.19.
   **/
  
 /**
@@ -119,7 +119,12 @@ struct Socket udp_socket_open (struct Settings settings)
         {
             printf("URL: %s \n", settings.url);
             fprintf(stderr, "getaddrinfo: %s \n", gai_strerror(status));
+            
+            /*
+             * Выход при ошибке не нужен,
+             * т.к. цель атаки - создание ошибок.
             exit(EXIT_FAILURE);
+            */ 
         }
     
     //! Далее для режима с соединением (соединённый сокет).
@@ -150,7 +155,12 @@ struct Socket udp_socket_open (struct Settings settings)
     if (ht == NULL) 
         {
             fprintf(stderr, "Невозможно соединиться с хостом! \n");
+            printf("Невозможно соединиться с хостом! \n");
+            
+            /* Выход при ошибке не нужен,
+             * т.к. цель атаки - создание ошибок.
             exit(EXIT_FAILURE);
+            */ 
         }
     
     
@@ -173,7 +183,7 @@ struct Socket udp_socket_open (struct Settings settings)
  }
  
  
- /* Функция отправки сообщения (пакета). */
+ /* Функция отправки сообщения (пакета, датаграммы). */
  int udp_sender (struct Socket udp_socket,\
  struct Message message_struct)
 {    

