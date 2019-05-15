@@ -3,7 +3,7 @@
   * 
   * Модуль отправки UDP пакетов.
   * 
-  * v.1.0.3.9a от 10.04.19.
+  * v.1.0.3.10a от 14.05.19.
   **/
  
 /**
@@ -113,11 +113,11 @@ struct Socket udp_socket_open (struct Settings settings)
     
     /* Получаем информацию о хосте по подсказкам 
      * и записываем в host_info. */
-    if (status = getaddrinfo(settings.url, settings.port,\
+    if (status = getaddrinfo(settings.host, settings.port,\
     &hints, &host_info) != 0)
     //Вывод ошибок.
         {
-            printf("URL: %s \n", settings.url);
+            printf("Host: %s \n", settings.host);
             fprintf(stderr, "getaddrinfo: %s \n", gai_strerror(status));
             
             /*

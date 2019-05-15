@@ -5,7 +5,7 @@
   * Для парсинга конфигурационного ini файла используется 
   * сторонний модуль minIni.
   * 
-  * v.1.1.5.17a от 10.04.19.
+  * v.1.1.5.19a от 15.05.19.
   **/
 
 /**
@@ -77,13 +77,13 @@ sDDoSerr Copyright © 2019 Константин Панков
 
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.2.1.16a";
+const char *argp_program_version = "v.1.2.1.18a";
 
 //Функция парсера.
 /*
  *  Надо придумать входные параметры для программы.
  * Сделать обязательными.
- * -u, --url - адрес (с двоеточием, т.к. нужен аргумент).
+ * -h, --host - адрес (с двоеточием, т.к. нужен аргумент).
  * -p, --port - порт, на который отправляются пакеты.
  * 
  * Необязательные, из конфига.
@@ -115,10 +115,11 @@ const char config[] = "config.ini";
 
 
 //Внутренние переменные со значениями из конфиг-файла.
-int  max_size; //Максимальный размер сообщения (+ к размеру пакета).
+int  message_size; //Максимальный размер сообщения (+ к размеру пакета).
 int  num_deltas;
 //char *protocol; //Протокол.
 int  protocol; //Протокол.
+int  host_size; //Максимальный размер имени хоста.
 int  procnum; //Количество процессов/потоков.
 int  pack_size; //Количество пакетов в одной "пачке", т.е. её размер.
 long int start_pause; //Начальная пауза между отправкой \
@@ -140,9 +141,10 @@ struct Settings settings;
 struct Settings parser (int argc, char *argv[])
 {
     /* Считываем настройки по-умолчанию из конфигурационного файла. */
-    max_size = ini_getl("General", "MaxSize", -1, config);
+    message_size = ini_getl("General", "MessageSize", -1, config);
     num_deltas = ini_getl("General", "NumDeltas", -1, config);
     protocol = ini_getl("General", "Protocol", -1, config);
+    host_size = ini_getl("General", "HostSize", -1, config);
     procnum = ini_getl("General", "ProcNum", -1, config);
     pack_size = ini_getl("General", "NumOfPacketsInPack", -1, config);
     start_pause = ini_getl("General", "StartPause", -1, config);
@@ -154,19 +156,37 @@ struct Settings parser (int argc, char *argv[])
     if (argc <= 1)
         {
             fprintf (stderr, \
-            "Не заданы обязательные параметры (URL, Port)! \n" \
+            "Не заданы обязательные параметры (Host, Port)! \n" \
             "Запустите программу с параметром --help для помощи. \n");
             exit(EXIT_FAILURE);
         }
     
-    /* Считываем и парсим аргументы командной строки. */
-    char *url = NULL;
-    char *port = NULL;
+    /* Считываем и парсим аргументы командной строки. 
+     * Переменные под адрес хоста и порт.
+     */
+    //!!! Надо нормально динамически выделить память под адрес хоста.
+    
+    //char *host;
+    char *host = NULL;
+    if ((host = malloc(host_size*sizeof(char))) == NULL)
+    {
+        printf("Ошибка выделения памяти под имя хоста! \n");
+        settings.host = NULL;
+        return settings;
+    }
+
+    
+    host = NULL;
+    //char *port = NULL;
+    //char *port[5] = {[0 ... 4] = NULL};
+    char *port[5] = {NULL};
+    //! unsigned short int от 0 до 65535. %hi
+    //unsigned short int port = 0; //ОБЛОМ! Функции getaddrinfo нужен char!
     
     /* Структура с параметрами работы парсера. */
     struct argp_option options[] =
     {
-        {"url", 'u', "URL", 0, "URL or IP"},
+        {"host", 'h', "HOST", 0, "Host - Hostname, URL or IP"},
         {"port", 'p', "PORT", 0, "Port"},
         {"debug", 'd', "[0|1|2]", OPTION_HIDDEN,\
         "Debug flag. Print debug messages: 0 - off, 1 - on, 2 - more"},
@@ -197,10 +217,9 @@ struct Settings parser (int argc, char *argv[])
     {
     switch (key)
         {        
-        case 'u':
+        case 'h':
             {
-                url = arg; //Запись значения в переменную.
-                
+                host = arg; //Запись значения в переменную.
                 break;
             }
         
@@ -221,12 +240,11 @@ struct Settings parser (int argc, char *argv[])
                         exit(EXIT_FAILURE);
                     }
                     
-                    
                 }
                 
                 //port = atoi(arg); //Перевод строки в число.
-                port = arg;
-                
+                //port = arg;
+                *port = arg;
                 break;
             }
             
@@ -245,7 +263,6 @@ struct Settings parser (int argc, char *argv[])
                 }
                 
                 debug = atoi(arg);
-                
                 break;
             }
         
@@ -272,19 +289,23 @@ the exit button."};
     
     /* Записываем конечные значения параметров в структуру. */
     
-    //strcpy (settings.url, "url"); //Строки записывать таким образом.
+    //strcpy (settings.host, "host"); //Строки записывать таким образом.
     
-    settings.url = url;
-    settings.port = port;
-    settings.max_size = max_size;
+    settings.host = host;
+    settings.port = *port;
+    settings.message_size = message_size;
     settings.num_deltas = num_deltas;
     settings.protocol = protocol;
     settings.procnum = procnum;
     settings.pack_size = pack_size;
     settings.start_pause = start_pause;
     settings.debug = debug;
+
+    
+    if (settings.debug == 1)
+        {printf("host: %p \n", host);}
     
     /* Возвращаем структуру со всеми настройками, 
      * включая и переопределённые. */
-    return settings; 
+    return settings;
 }

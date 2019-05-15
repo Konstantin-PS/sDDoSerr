@@ -3,7 +3,7 @@
   * 
   * Основной модуль программы.
   * 
-  * v.1.2.1.16a от 10.04.19.
+  * v.1.2.1.18a от 15.05.19.
   * !Не забывать изменять *argp_program_version 
   * под новую версию в парсере!
   **/
@@ -86,7 +86,6 @@ int get_current_time ()
     time_t time_now = time(NULL);
     strftime(current_time, sizeof(current_time),\
     "%d.%m.%Y в %H:%M:%S", localtime(&time_now));
-    
     return 0;
 }
 
@@ -104,7 +103,6 @@ long long int get_time ()
   	timestamp_msec = -1;
   }
   printf("%lld milliseconds since Epoch\n", timestamp_msec);
-
   return timestamp_msec;
 }
 
@@ -126,7 +124,6 @@ void term_nonblocking()
         newt = stdin_orig;
         newt.c_lflag &= ~(ICANON | ECHO);
         tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
         atexit(term_reset);
     }
         
@@ -151,6 +148,16 @@ int main (int argc, char *argv[])
      * структуры со всеми настройками программы. */
     //!printf("Запуск функции парсера. \n");
     struct Settings settings = parser (argc, argv);
+    if (settings.host == NULL)
+    {
+        printf("Ошибка запуска парсера! \n");
+        fprintf(log, "%s \n", "Ошибка запуска парсера!");
+                
+        //Закрытие файла лога.
+        fclose(log);
+                
+        exit(EXIT_FAILURE);
+    }
 
     if (settings.debug == 1) //Если установлен флаг дебага.
         {printf("Запуск функции парсера выполнен. \n");}
@@ -158,8 +165,8 @@ int main (int argc, char *argv[])
     if (settings.debug == 1)
         {printf("Запуск функции создания сокета. \n");}
         
-    /* Вызов функции отправщика пакетов 
-     * с передачей ему структуры настроек. */
+    /* Вызов функции открытия сокета 
+     * с передачей ей структуры настроек. */
     struct Socket udp_sock = udp_socket_open (settings);
     
     
@@ -184,8 +191,8 @@ int main (int argc, char *argv[])
     /* Заполнение массива -дельт псевдорандомными числами. */
     for (int j = 0; j <= settings.num_deltas; j++)
         {
-            //message_deltas[j] = rand() % (settings.max_size-1);
-            message_deltas[j] = random() % (settings.max_size-1); 
+            //message_deltas[j] = rand() % (settings.message_size-1);
+            message_deltas[j] = random() % (settings.message_size-1); 
             //От 0 до % максимум-1.
     //Т.е. при задании .. % 50 будут генерироваться числа от 0 до 49.
        
@@ -194,7 +201,7 @@ int main (int argc, char *argv[])
                 {printf("Message_deltas [%i]: %d \n", j,\
                     message_deltas[j]);}
             //printf("Message_deltas0 [%i]: %d \n", j,\
-            random() % settings.max_size-1);
+            random() % settings.message_size-1);
         }
     if (settings.debug == 1)
         {printf("\n");} //! Отладка.
@@ -205,20 +212,36 @@ int main (int argc, char *argv[])
         {printf("Динамическое выделение памяти под сообщение. \n");}
     
     /* Динамическое выделение памяти под полное сообщение. */
-    char *message_full = malloc (settings.max_size*sizeof(char));
+    char *message_full;
+    if ((message_full = malloc(settings.message_size*sizeof(char))) == NULL)
+        {
+            printf("Ошибка выделения памяти под полное сообщение! \n");
+            fprintf(log, "%s \n",\
+                      "Ошибка выделения памяти под полное сообщение!");
+            //Очистка динамической памяти под полное сообщение.
+            //free(message_full);
+                
+            //Закрытие сокета.
+            int udp_close = udp_closer (udp_socket);
+                
+            //Закрытие файла лога.
+            fclose(log);
+                
+            exit(EXIT_FAILURE);
+        }
     
     /* Заполнение полного сообщения псевдорандомными символами. */
     //ASCII_START 32, ASCII_END 126
-    for (int i = 0; i < settings.max_size; i++)
+    for (int i = 0; i < settings.message_size; i++)
     {
         message_full[i] = (char) (random() % (126-32))+32;
         //message_full[i] = '0'; //(или) Забивание нулями.
     }
-    //message_full[max_size] = '\0'; //Терминация.
+    //message_full[message_size] = '\0'; //Терминация.
     
     //Вывод нетерминированного сообщения.
     if (settings.debug == 1)
-        {printf("Полное сообщение: %.*s \n", settings.max_size,\
+        {printf("Полное сообщение: %.*s \n", settings.message_size,\
             message_full);}
             
     if (settings.debug == 1)
@@ -344,8 +367,8 @@ int main (int argc, char *argv[])
         
         
         /* Размер кропнутого сообщения. */
-        //message_struct.mes_size = max_size - delta;
-        message_struct.mes_size = settings.max_size-message_deltas[di];
+        //message_struct.mes_size = message_size - delta;
+        message_struct.mes_size = settings.message_size-message_deltas[di];
         
         /* В конце считывания дельт инкремент счётчика. */
         di++;
@@ -363,7 +386,7 @@ int main (int argc, char *argv[])
                 message_struct.mes_size);
             }
             
-        /* Вызов функции отправки. */
+        /* Вызов функции отправки сообщений. */
         if (settings.debug == 1)
             {printf("Вызов функции отправки. \n");}
     
@@ -396,14 +419,10 @@ int main (int argc, char *argv[])
                 fclose(log);
                 
                 exit(EXIT_FAILURE);
-                
                 */
             }
         
-        
         //Зануление полей структуры (если требуется).
-    
-        
     }
     //! Конец цикла на отправку одной "пачки" пакетов.
     
@@ -458,17 +477,37 @@ int main (int argc, char *argv[])
         }
     /* Очистка динамической памяти под полное сообщение. */
     free(message_full);
+    message_full = NULL;
+    
 
     //Отладка.
     if (settings.debug == 1)
         {
             printf("*DEBUG* \n" \
-            "url = %s, port = %s, max_size = %i, "\
+            "host = %s, port = %s, message_size = %i, "\
             "protocol = %s, procnum = %i \n" \
             "*DEBUG* \n",\
-            settings.url, settings.port, settings.max_size,\
+            settings.host, settings.port, settings.message_size,\
             settings.protocol, settings.procnum);
         }
+        
+    
+    if (settings.debug == 1)
+        {
+            printf("host: %p, host_addr: %p \n", settings.host);
+        }
+    
+        
+    if (settings.debug == 1)
+        {
+         printf("Очистка динамической памяти под хост. \n");
+        }
+    /* Очистка динамической памяти под хост. */
+    free(settings.host); 
+    //!Проблема, возможно, в том, что это, похоже, указатель на указатель.
+    
+    //char *host_addr = settings.host;
+    //free(host_addr);
     
     /* Получение конечного времени и запись в лог. */
     get_current_time();

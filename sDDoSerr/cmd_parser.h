@@ -3,7 +3,7 @@
   * 
   * Заголовочный файл для парсера командной строки.
   * 
-  * v.1.1.4.8a от 31.03.19.
+  * v.1.1.4.10a от 15.05.19.
   **/
  
 /**
@@ -70,15 +70,15 @@ sDDoSerr Copyright © 2019 Константин Панков
  * функции сдвоенного парсера. */
 struct Settings 
     {
-    char *url;
-    char *port;
-    int  max_size;
-    int  num_deltas;
-    int  protocol;
-    int  procnum;
-    int  pack_size;
-    long int start_pause;
-    int  debug;
+    char        *host;
+    char        *port;
+    int         message_size;
+    int         num_deltas;
+    int         protocol;
+    int         procnum;
+    int         pack_size;
+    long int    start_pause;
+    int         debug;
     };
 
 struct Settings settings;
