@@ -3,7 +3,7 @@
   * 
   * Основной модуль программы.
   * 
-  * v.1.2.1.18a от 15.05.19.
+  * v.1.2.2.19a от 22.05.19.
   * !Не забывать изменять *argp_program_version 
   * под новую версию в парсере!
   **/
@@ -147,11 +147,14 @@ int main (int argc, char *argv[])
     /* Запуск функции сдвоенного парсера и получение на выходе
      * структуры со всеми настройками программы. */
     //!printf("Запуск функции парсера. \n");
-    struct Settings settings = parser (argc, argv);
-    if (settings.host == NULL)
+    struct Settings *settings = parser(argc, argv);
+    if (settings->host == NULL)
     {
         printf("Ошибка запуска парсера! \n");
         fprintf(log, "%s \n", "Ошибка запуска парсера!");
+        
+        /* Очистка динамической памяти под структуру настроек. */
+        free(settings);
                 
         //Закрытие файла лога.
         fclose(log);
@@ -159,10 +162,10 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if (settings.debug == 1) //Если установлен флаг дебага.
+    if (settings->debug == 1) //Если установлен флаг дебага.
         {printf("Запуск функции парсера выполнен. \n");}
     
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {printf("Запуск функции создания сокета. \n");}
         
     /* Вызов функции открытия сокета 
@@ -174,7 +177,7 @@ int main (int argc, char *argv[])
     struct Message message_struct;
     
     /* Массив из рандомных -дельт от максимальной длины сообщения. */
-    int message_deltas[settings.num_deltas];
+    int message_deltas[settings->num_deltas];
     //printf("Sizeof message_deltas: %i \n", sizeof(message_deltas));
     
     //Инициализация генератора псевдорандомных чисел 
@@ -186,40 +189,43 @@ int main (int argc, char *argv[])
     //srand(time(0));
     srandom(time(0));
     
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {printf("Отладка. \n");} //! Отладка.
     /* Заполнение массива -дельт псевдорандомными числами. */
-    for (int j = 0; j <= settings.num_deltas; j++)
+    for (int j = 0; j <= settings->num_deltas; j++)
         {
-            //message_deltas[j] = rand() % (settings.message_size-1);
-            message_deltas[j] = random() % (settings.message_size-1); 
+            //message_deltas[j] = rand() % (settings->message_size-1);
+            message_deltas[j] = random() % (settings->message_size-1); 
             //От 0 до % максимум-1.
     //Т.е. при задании .. % 50 будут генерироваться числа от 0 до 49.
        
             //!Дебажный вывод содержимого массива.
-            if (settings.debug == 1)
+            if (settings->debug == 1)
                 {printf("Message_deltas [%i]: %d \n", j,\
                     message_deltas[j]);}
             //printf("Message_deltas0 [%i]: %d \n", j,\
-            random() % settings.message_size-1);
+            random() % settings->message_size-1);
         }
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {printf("\n");} //! Отладка.
     
     
     
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {printf("Динамическое выделение памяти под сообщение. \n");}
     
     /* Динамическое выделение памяти под полное сообщение. */
     char *message_full;
-    if ((message_full = malloc(settings.message_size*sizeof(char))) == NULL)
+    if ((message_full = malloc(settings->message_size*sizeof(char))) == NULL)
         {
             printf("Ошибка выделения памяти под полное сообщение! \n");
             fprintf(log, "%s \n",\
                       "Ошибка выделения памяти под полное сообщение!");
             //Очистка динамической памяти под полное сообщение.
             //free(message_full);
+            
+            /* Очистка динамической памяти под структуру настроек. */
+            free(settings);
                 
             //Закрытие сокета.
             int udp_close = udp_closer (udp_socket);
@@ -232,7 +238,7 @@ int main (int argc, char *argv[])
     
     /* Заполнение полного сообщения псевдорандомными символами. */
     //ASCII_START 32, ASCII_END 126
-    for (int i = 0; i < settings.message_size; i++)
+    for (int i = 0; i < settings->message_size; i++)
     {
         message_full[i] = (char) (random() % (126-32))+32;
         //message_full[i] = '0'; //(или) Забивание нулями.
@@ -240,13 +246,13 @@ int main (int argc, char *argv[])
     //message_full[message_size] = '\0'; //Терминация.
     
     //Вывод нетерминированного сообщения.
-    if (settings.debug == 1)
-        {printf("Полное сообщение: %.*s \n", settings.message_size,\
+    if (settings->debug == 1)
+        {printf("Полное сообщение: %.*s \n", settings->message_size,\
             message_full);}
             
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {printf("Вход в цикл отправки одной пачки. \n");}
-    //printf("settings.pack_size %i \n", settings.pack_size);
+    //printf("settings->pack_size %i \n", settings->pack_size);
     
     
     /* Запись указателя на начало полного сообщения 
@@ -283,7 +289,7 @@ int main (int argc, char *argv[])
                 break;
             }
     
-    if (settings.debug == 2)
+    if (settings->debug == 2)
             {                
                 start_time = get_time();
             }
@@ -297,27 +303,27 @@ int main (int argc, char *argv[])
     time_t ns_time_s;
     long ns_time_ns;
     
-    if (settings.start_pause < 1000)
+    if (settings->start_pause < 1000)
     {
         ns_time_s = 0;
-        ns_time_ns = settings.start_pause * 1000000;
+        ns_time_ns = settings->start_pause * 1000000;
         ns_time.tv_sec = ns_time_s; //Время паузы, в секундах.
         //В наносекундах. С переводом из мс в нс.
         ns_time.tv_nsec = ns_time_ns; 
     }
     //100000000 ns = 100 ms.
     
-    if (settings.start_pause >= 1000)
+    if (settings->start_pause >= 1000)
     {
-        ns_time_s = settings.start_pause / 1000; //Целое = секунды.
-        ns_time_ns = (settings.start_pause % 1000) * 1000000;
+        ns_time_s = settings->start_pause / 1000; //Целое = секунды.
+        ns_time_ns = (settings->start_pause % 1000) * 1000000;
         //Остаток = микросекунды, переводим в наносекунды.
         ns_time.tv_sec = ns_time_s;
         ns_time.tv_nsec = ns_time_ns;
     }
     
     
-    if (settings.debug >= 1)
+    if (settings->debug >= 1)
             {
                 printf("%lli-я итерация полного цикла. \n",\
                 cycle_counter);
@@ -331,18 +337,18 @@ int main (int argc, char *argv[])
             }
     
     
-    /** Цикл по settings.pack_size на отправку ОДНОЙ "пачки" пакетов.**/
+    /** Цикл по settings->pack_size на отправку ОДНОЙ "пачки" пакетов.**/
     
-    if (settings.debug == 2)
+    if (settings->debug == 2)
             {                
                 pack_start_time = get_time();
             }
     
     //int delta, di = 0; //Временные переменные для цикла.
     int di = 0; //Счётчик итерации для дельт.
-    for (int i = 1; i <= settings.pack_size; i++)
+    for (int i = 1; i <= settings->pack_size; i++)
     {
-        if (settings.debug >= 1)
+        if (settings->debug >= 1)
             {
                 printf("%i-я итерация цикла пачки. \n", i);
                 fprintf(log, "%i%s \n", i, "-я итерация цикла пачки.");
@@ -356,10 +362,10 @@ int main (int argc, char *argv[])
         * и запись в поле структуры. Вычисление и запись в поле 
         * структуры размера кропнутого сообщения.
         * Проверять маркер цикла считывания на выход за размер 
-        * settings.num_deltas.
+        * settings->num_deltas.
         **/
         
-        if (di > settings.num_deltas)
+        if (di > settings->num_deltas)
             {
                 di = 0; //Если дельт больше, чем пакетов в пачке, 
                 //то с начала.
@@ -368,17 +374,17 @@ int main (int argc, char *argv[])
         
         /* Размер кропнутого сообщения. */
         //message_struct.mes_size = message_size - delta;
-        message_struct.mes_size = settings.message_size-message_deltas[di];
+        message_struct.mes_size = settings->message_size-message_deltas[di];
         
         /* В конце считывания дельт инкремент счётчика. */
         di++;
         
-        if (settings.debug == 1)
+        if (settings->debug == 1)
             {printf("Запись кропнутого сообщения в поле структуры \n");}
         
         
         //Отладка.
-        if (settings.debug >= 1)
+        if (settings->debug >= 1)
             {
                 printf("Обрезанное сообщение: %.*s \n",\
                 message_struct.mes_size, message_struct.message);
@@ -387,7 +393,7 @@ int main (int argc, char *argv[])
             }
             
         /* Вызов функции отправки сообщений. */
-        if (settings.debug == 1)
+        if (settings->debug == 1)
             {printf("Вызов функции отправки. \n");}
     
         
@@ -427,7 +433,7 @@ int main (int argc, char *argv[])
     //! Конец цикла на отправку одной "пачки" пакетов.
     
     /* Вывод времени отправки одной "пачки" пакетов. */
-    if (settings.debug == 2)
+    if (settings->debug == 2)
             {
                 pack_end_time = get_time();
                 
@@ -440,21 +446,20 @@ int main (int argc, char *argv[])
      * между отправкой "пачек". **/
     if (nanosleep(&ns_time, &ns_time2) < 0)
         {
-            printf("Ошибка вызова nano sleep. \n");
+            printf("Ошибка вызова nanosleep. \n");
+            fprintf(log, "\n%s\n", "Ошибка вызова nanosleep.");
             return 1;
-            /*
-             * Тоже не надо выходить из цикла при ошибке.
+            //Возможно, не надо выходить из цикла при ошибке?
             break;
-            */ 
         }
         
         //Для дебага.
-        if (settings.debug >= 1)
+        if (settings->debug >= 1)
             {
                 cycle_counter++;
             }
         
-        if (settings.debug == 2)
+        if (settings->debug == 2)
             {                
                 end_time = get_time();
                 elapsed_time = end_time - start_time;
@@ -465,13 +470,13 @@ int main (int argc, char *argv[])
     /** Конец цикла отправки "пачек" пакетов. **/
     
     
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {printf("Закрытие сокета. \n");}
     
     /* Закрытие сокета. */
     int udp_close = udp_closer (udp_socket);
 
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {
          printf("Очистка динамической памяти под полное сообщение. \n");
         }
@@ -481,33 +486,43 @@ int main (int argc, char *argv[])
     
 
     //Отладка.
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {
             printf("*DEBUG* \n" \
             "host = %s, port = %s, message_size = %i, "\
             "protocol = %s, procnum = %i \n" \
             "*DEBUG* \n",\
-            settings.host, settings.port, settings.message_size,\
-            settings.protocol, settings.procnum);
+            settings->host, settings->port, settings->message_size,\
+            settings->protocol, settings->procnum);
         }
         
     
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {
-            printf("host: %p, host_addr: %p \n", settings.host);
+            printf("host: %p, host_string: %s \n",\
+            settings->host, settings->host);
         }
     
         
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {
          printf("Очистка динамической памяти под хост. \n");
         }
     /* Очистка динамической памяти под хост. */
-    free(settings.host); 
+    free(settings->host); 
     //!Проблема, возможно, в том, что это, похоже, указатель на указатель.
     
-    //char *host_addr = settings.host;
+    //char *host_addr = settings->host;
     //free(host_addr);
+    
+    
+    if (settings->debug == 1)
+        {
+         printf("Очистка динамической памяти под настройки. \n");
+        }
+    /* Очистка динамической памяти под структуру настроек. */
+    free(settings);
+    
     
     /* Получение конечного времени и запись в лог. */
     get_current_time();
@@ -516,7 +531,7 @@ int main (int argc, char *argv[])
     current_time, ".");
     
     
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {printf("Закрытие файла лога. \n");}
         
     /* Закрытие файла лога. */

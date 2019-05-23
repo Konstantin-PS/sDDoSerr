@@ -3,7 +3,7 @@
   * 
   * Модуль отправки UDP пакетов.
   * 
-  * v.1.0.3.10a от 14.05.19.
+  * v.1.0.5.11a от 22.05.19.
   **/
  
 /**
@@ -80,7 +80,7 @@ struct Socket udp_socket;
 
 
 /* Функция создания и открытия сокета. */
-struct Socket udp_socket_open (struct Settings settings)
+struct Socket udp_socket_open (struct Settings *settings)
 {
     /* Получаем параметры работы из структуры settings от парсера. */
     
@@ -108,17 +108,17 @@ struct Socket udp_socket_open (struct Settings settings)
     hints.ai_family = AF_UNSPEC;    // Разрешает IPv4 or IPv6.
     hints.ai_socktype = SOCK_DGRAM; // Сокет датаграмм для UDP.
     hints.ai_flags = AI_NUMERICSERV;
-    hints.ai_protocol = settings.protocol;   // Протокол. 0 - любой.
+    hints.ai_protocol = settings->protocol;   // Протокол. 0 - любой.
     
     
     /* Получаем информацию о хосте по подсказкам 
      * и записываем в host_info. */
-    if (status = getaddrinfo(settings.host, settings.port,\
+    if (status = getaddrinfo(settings->host, settings->port,\
     &hints, &host_info) != 0)
     //Вывод ошибок.
         {
-            printf("Host: %s \n", settings.host);
-            fprintf(stderr, "getaddrinfo: %s \n", gai_strerror(status));
+            printf("Host: %s \n", settings->host);
+            fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
             
             /*
              * Выход при ошибке не нужен,
@@ -171,7 +171,7 @@ struct Socket udp_socket_open (struct Settings settings)
     udp_socket.address = *host_info -> ai_addr;
     //udp_socket.address = *hints.ai_addr; //Отдаёт как есть.
     
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {printf("udp_socket.address: %ld \n", udp_socket.address);}
     
     /* Освобождаем память. */
@@ -190,7 +190,7 @@ struct Socket udp_socket_open (struct Settings settings)
     /* Отправка пакетов (датаграмм). */
     int stat = 0;
     
-    if (settings.debug == 1)
+    if (settings->debug == 1)
     {
         printf("Message from udp_sender: %.*s \n",\
         message_struct.mes_size, message_struct.message);

@@ -5,7 +5,7 @@
   * Для парсинга конфигурационного ini файла используется 
   * сторонний модуль minIni.
   * 
-  * v.1.1.5.19a от 15.05.19.
+  * v.1.1.6.20a от 22.05.19.
   **/
 
 /**
@@ -69,7 +69,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 #include <string.h>
 #include <argp.h> //Парсер командной строки.
 #include <argz.h>
-#include "minIni.h" //Сторонний парсер ini.
+#include "minIni.h" //Сторонний парсер ini-файлов.
 #include <stdlib.h> //Для atoi() в парсинге аргументов.
 #include <ctype.h> //Для isdigit().
 
@@ -77,7 +77,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.2.1.18a";
+const char *argp_program_version = "v.1.2.2.19a";
 
 //Функция парсера.
 /*
@@ -128,18 +128,26 @@ int  debug; //Флаг дебага. 0 - выкл.; 1 - вкл.; 2 - подро�
 
 
 /* 
-* Структура со всеми параметрами, в которую будут записываться 
+* Структура настроек, в которую будут записываться 
 * все параметры программы (в том числе, после переопределения 
-* параметрами командной строки).
+* аргументами командной строки).
 */
 
 
-/* Декларация структуры настроек settings типа Settings. */
-struct Settings settings;
-
 /* Сдвоенная функция считывания конфига и парсинга командной строки. */
-struct Settings parser (int argc, char *argv[])
+struct Settings *parser (int argc, char *argv[])
 {
+    
+    /* Динамическое выделение памяти под структуру настроек
+     * settings типа Settings. 
+     * 
+     * !Для доступа к полям структуры по указателю на неё надо 
+     * использовать не "settings.поле", а "settings->поле"!
+     * */
+    //struct Settings *settings;
+    settings = NULL;
+    settings = malloc(sizeof(struct Settings));
+    
     /* Считываем настройки по-умолчанию из конфигурационного файла. */
     message_size = ini_getl("General", "MessageSize", -1, config);
     num_deltas = ini_getl("General", "NumDeltas", -1, config);
@@ -166,17 +174,16 @@ struct Settings parser (int argc, char *argv[])
      */
     //!!! Надо нормально динамически выделить память под адрес хоста.
     
-    //char *host;
     char *host = NULL;
     if ((host = malloc(host_size*sizeof(char))) == NULL)
     {
         printf("Ошибка выделения памяти под имя хоста! \n");
-        settings.host = NULL;
+        settings->host = NULL;
         return settings;
     }
 
     
-    host = NULL;
+    //host = NULL;
     //char *port = NULL;
     //char *port[5] = {[0 ... 4] = NULL};
     char *port[5] = {NULL};
@@ -289,20 +296,20 @@ the exit button."};
     
     /* Записываем конечные значения параметров в структуру. */
     
-    //strcpy (settings.host, "host"); //Строки записывать таким образом.
+    //strcpy (settings->host, "host"); //Строки записывать таким образом.
     
-    settings.host = host;
-    settings.port = *port;
-    settings.message_size = message_size;
-    settings.num_deltas = num_deltas;
-    settings.protocol = protocol;
-    settings.procnum = procnum;
-    settings.pack_size = pack_size;
-    settings.start_pause = start_pause;
-    settings.debug = debug;
+    settings->host = host;
+    settings->port = *port;
+    settings->message_size = message_size;
+    settings->num_deltas = num_deltas;
+    settings->protocol = protocol;
+    settings->procnum = procnum;
+    settings->pack_size = pack_size;
+    settings->start_pause = start_pause;
+    settings->debug = debug;
 
     
-    if (settings.debug == 1)
+    if (settings->debug == 1)
         {printf("host: %p \n", host);}
     
     /* Возвращаем структуру со всеми настройками, 

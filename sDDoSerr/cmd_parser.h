@@ -3,7 +3,7 @@
   * 
   * Заголовочный файл для парсера командной строки.
   * 
-  * v.1.1.4.10a от 15.05.19.
+  * v.1.1.5.11a от 22.05.19.
   **/
  
 /**
@@ -71,7 +71,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 struct Settings 
     {
     char        *host;
-    char        *port;
+    char        *port; //Порт должен быть символами для getaddrinfo().
     int         message_size;
     int         num_deltas;
     int         protocol;
@@ -81,8 +81,8 @@ struct Settings
     int         debug;
     };
 
-struct Settings settings;
+struct Settings *settings;
 
-struct Settings parser (int argc, char *argv[]);
+struct Settings *parser (int argc, char *argv[]);
 
 #endif

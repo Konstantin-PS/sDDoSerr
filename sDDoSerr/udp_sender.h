@@ -3,7 +3,7 @@
   * 
   * Заголовочный файл для модуля отправки UDP пакетов.
   * 
-  * v.1.0.2.4a от 31.03.19.
+  * v.1.0.3.5a от 22.05.19.
   **/
 
 /**
@@ -76,7 +76,7 @@ struct Socket
 
 struct Socket udp_socket;
 
-struct Socket udp_socket_open (struct Settings settings);
+struct Socket udp_socket_open (struct Settings *settings);
 
 
 /* "Каркас" структуры сообщения (из main). */
