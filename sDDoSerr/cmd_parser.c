@@ -5,7 +5,7 @@
   * Для парсинга конфигурационного ini файла используется 
   * сторонний модуль minIni.
   * 
-  * v.1.1.6.21a от 24.05.19.
+  * v.1.2.6.21a от 30.05.19.
   **/
 
 /**
@@ -72,12 +72,13 @@ sDDoSerr Copyright © 2019 Константин Панков
 #include "minIni.h" //Сторонний парсер ini-файлов.
 #include <stdlib.h> //Для atoi() в парсинге аргументов.
 #include <ctype.h> //Для isdigit().
+#include <math.h> //Для llround.
 
 #include "cmd_parser.h"
 
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.2.2.20a";
+const char *argp_program_version = "v.1.3.2.21a";
 
 //Функция парсера.
 /*
@@ -115,16 +116,20 @@ const char config[] = "config.ini";
 
 
 //Внутренние переменные со значениями из конфиг-файла.
-int  message_size; //Максимальный размер сообщения (+ к размеру пакета).
-int  num_deltas;
-//char *protocol; //Протокол.
-int  protocol; //Протокол.
-int  host_size; //Максимальный размер имени хоста.
-int  procnum; //Количество процессов/потоков.
-int  pack_size; //Количество пакетов в одной "пачке", т.е. её размер.
-long int start_pause; //Начальная пауза между отправкой \
+unsigned long long int  message_size = 0; //Макс. размер сообщения 
+//(+ к размеру пакета).
+double amplitude = 0; //Амплитуда, в Мибибит/с.
+int    num_deltas = 0; //Количество -дельт от макс. размера сообщения.
+int    protocol = 0; //Протокол.
+int    host_size = 0; //Максимальный размер имени хоста.
+int    procnum = 0; //Количество процессов/потоков.
+//int  pack_size; //Количество пакетов в одной "пачке", т.е. её размер.
+//int    impulse_time = 0; //Время импульса, мс.
+int    impulse_time = 0; //Время импульса, мс.
+//long int start_pause; //Начальная пауза между отправкой \
 "пачек" пакетов, в мс.
-int  debug; //Флаг дебага. 0 - выкл.; 1 - вкл.; 2 - подробно.
+long int period = 0; //Период между отправкой "пачек" пакетов, мс.
+int    debug = 0; //Флаг дебага. 0 - выкл.; 1 - вкл.; 2 - подробно.
 
 
 /* 
@@ -144,18 +149,20 @@ struct Settings *parser (int argc, char *argv[])
      * !Для доступа к полям структуры по указателю на неё надо 
      * использовать не "settings.поле", а "settings->поле"!
      * */
-    //struct Settings *settings;
     settings = NULL;
     settings = malloc(sizeof(struct Settings));
     
     /* Считываем настройки по-умолчанию из конфигурационного файла. */
-    message_size = ini_getl("General", "MessageSize", -1, config);
+    //message_size = ini_getl("General", "MessageSize", -1, config);
+    amplitude = ini_getl("General", "Amplitude", -1, config);
     num_deltas = ini_getl("General", "NumDeltas", -1, config);
     protocol = ini_getl("General", "Protocol", -1, config);
     host_size = ini_getl("General", "HostSize", -1, config);
     procnum = ini_getl("General", "ProcNum", -1, config);
-    pack_size = ini_getl("General", "NumOfPacketsInPack", -1, config);
-    start_pause = ini_getl("General", "StartPause", -1, config);
+    //pack_size = ini_getl("General", "NumOfPacketsInPack", -1, config);
+    impulse_time = ini_getl("General", "ImpulseTime", -1, config);
+    //start_pause = ini_getl("General", "StartPause", -1, config);
+    period = ini_getl("General", "Period", -1, config);
     debug = ini_getl("General", "Debug", -1, config);
     
     
@@ -166,13 +173,22 @@ struct Settings *parser (int argc, char *argv[])
             fprintf (stderr, \
             "Не заданы обязательные параметры (Host, Port)! \n" \
             "Запустите программу с параметром --help для помощи. \n");
+            free(settings);
+            exit(EXIT_FAILURE);
+        }
+    
+    //if (period < 7875/131072)
+    if (period == 0)
+        {
+            fprintf(stderr, \
+            "Заданный период равен нулю. \n");
+            free(settings);
             exit(EXIT_FAILURE);
         }
     
     /* Считываем и парсим аргументы командной строки. 
      * Переменные под адрес хоста и порт.
      */
-    //!!! Надо нормально динамически выделить память под адрес хоста.
     
     char *host = NULL;
     if ((host = malloc(host_size*sizeof(char))) == NULL)
@@ -182,13 +198,9 @@ struct Settings *parser (int argc, char *argv[])
         return settings;
     }
 
-    
-    //host = NULL;
-    //char *port = NULL;
-    //char *port[5] = {[0 ... 4] = NULL};
     char *port[5] = {NULL};
     //! unsigned short int от 0 до 65535. %hi
-    //unsigned short int port = 0; //ОБЛОМ! Функции getaddrinfo нужен char!
+    //Функции getaddrinfo нужен char!
     
     /* Структура с параметрами работы парсера. */
     struct argp_option options[] =
@@ -292,12 +304,19 @@ the exit button."};
 
     
     /* Запуск парсера. */
-    argp_parse (&argp, argc, argv, 0, 0, 0);
+    argp_parse(&argp, argc, argv, 0, 0, 0);
     
     
+    /* Считаем максимальный размер сообщения по амплитуде. */
+    message_size = llround(amplitude/1000*1024*1024-63); 
+    //Не компилируется без -lm.
+    //(Миб/мс без размера концевиков) = (Миб/с) -> (Миб/мс) -> (Киб/мс) 
+    //-> (бит/мс) -> -63 бита концевиков.
+    //long long int llround(double)
+    
+        
     /* Записываем конечные значения параметров в структуру. */
-    
-    //strcpy (settings->host, "host"); //Строки записывать таким образом.
+    //strcpy (settings->host, "host"); //Строки записывать лучше так.
     
     settings->host = host;
     settings->port = *port;
@@ -305,13 +324,11 @@ the exit button."};
     settings->num_deltas = num_deltas;
     settings->protocol = protocol;
     settings->procnum = procnum;
-    settings->pack_size = pack_size;
-    settings->start_pause = start_pause;
+    //settings->pack_size = pack_size;
+    settings->impulse_time = impulse_time;
+    //settings->start_pause = start_pause;
+    settings->period = period;
     settings->debug = debug;
-
-    
-    if (settings->debug == 1)
-        {printf("host: %p \n", host);}
     
     /* Возвращаем структуру со всеми настройками, 
      * включая и переопределённые. */
