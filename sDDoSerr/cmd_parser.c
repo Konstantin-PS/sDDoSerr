@@ -5,7 +5,7 @@
   * Для парсинга конфигурационного ini файла используется 
   * сторонний модуль minIni.
   * 
-  * v.1.2.6.21a от 30.05.19.
+  * v.1.2.6.22a от 30.10.19.
   **/
 
 /**
@@ -78,7 +78,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.3.2.21a";
+const char *argp_program_version = "v.1.3.3.22a";
 
 //Функция парсера.
 /*

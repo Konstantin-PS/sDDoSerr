@@ -3,7 +3,7 @@
   * 
   * Основной модуль программы.
   * 
-  * v.1.3.2.21a от 30.05.19.
+  * v.1.3.3.22a от 30.10.19.
   * !Не забывать изменять *argp_program_version 
   * под новую версию в парсере!
   **/
@@ -71,7 +71,8 @@ sDDoSerr Copyright © 2019 Константин Панков
 #include "cmd_parser.h"
 #include "udp_sender.h"
 
-#include <sys/timeb.h>  // ftime, timeb (для времени в миллисекундах).
+//#include <sys/timeb.h>  // ftime, timeb (для времени в миллисекундах).
+#include <sys/time.h>
 
 //Для неблокированного терминала.
 #include <termio.h>
@@ -89,7 +90,9 @@ int get_current_time ()
     return 0;
 }
 
-/** Функция получения точного времени в миллисекундах. **/
+/** Функция получения точного времени в миллисекундах. 
+ *  Мало точности, надо хотябы в микросекундах! **/
+/*
 long long int get_time ()
 {
   struct timeb timer_msec;
@@ -105,6 +108,17 @@ long long int get_time ()
     }
   //printf("%lld milliseconds since Epoch. \n", timestamp_msec);
   return timestamp_msec;
+}
+*/
+
+/**
+ * Функция получения точного времени в микросекундах.
+ **/ 
+long long int get_time ()
+{
+    struct timeval currentTime;
+    gettimeofday(&currentTime, NULL);
+    return currentTime.tv_sec * (long long int)1e6 + currentTime.tv_usec;
 }
 
 /** Для возможности прерывания бесконечного цикла 
@@ -468,7 +482,7 @@ int main (int argc, char *argv[])
             {   
                 pack_time = pack_end_time - pack_start_time;
                 printf("Затраченное время на отправку 'пачки' пакетов"\
-                " %lld мс. \n", pack_time);
+                " %lld мкс. \n", pack_time);
             }
     
     //Пауза между отправкой "пачек".
@@ -529,7 +543,7 @@ int main (int argc, char *argv[])
             {                
                 end_time = get_time();
                 elapsed_time = end_time - start_time;
-                printf("\nВремя полного цикла: %lli мс.\n",\
+                printf("\nВремя полного цикла: %lli мкс.\n",\
                 elapsed_time);
             }
     
