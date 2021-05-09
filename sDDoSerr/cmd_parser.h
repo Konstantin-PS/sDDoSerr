@@ -3,7 +3,7 @@
   * 
   * Заголовочный файл для парсера командной строки.
   * 
-  * v.1.2.5.12a от 30.05.19.
+  * v.1.3.5.13a от 11.04.21.
   **/
  
 /**
@@ -70,18 +70,15 @@ sDDoSerr Copyright © 2019 Константин Панков
  * функции сдвоенного парсера. */
 struct Settings 
     {
-    char          *host;
-    char          *port; //Порт должен быть символами для getaddrinfo().
+    char            *host;
+    char            *port; //Порт должен быть символами для getaddrinfo().
     unsigned long long int message_size;
-    int           num_deltas;
-    int           protocol;
-    int           procnum;
-    //int           pack_size;
-    //int           impulse_time;
-    int           impulse_time;
-    //long int      start_pause;
-    long int      period;
-    int           debug;
+    int             num_deltas;
+    int             protocol;
+    int             procnum;
+    int             pack_size;
+    long int        start_pause;
+    int             debug;
     };
 
 struct Settings *settings;

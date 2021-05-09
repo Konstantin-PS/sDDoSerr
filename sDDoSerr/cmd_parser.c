@@ -5,7 +5,7 @@
   * Для парсинга конфигурационного ini файла используется 
   * сторонний модуль minIni.
   * 
-  * v.1.2.6.22a от 30.10.19.
+  * v.1.3.6.23a от 11.04.21.
   **/
 
 /**
@@ -78,7 +78,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.3.3.22a";
+const char *argp_program_version = "v.1.4.1.23a";
 
 //Функция парсера.
 /*
@@ -116,20 +116,15 @@ const char config[] = "config.ini";
 
 
 //Внутренние переменные со значениями из конфиг-файла.
-unsigned long long int  message_size = 0; //Макс. размер сообщения 
-//(+ к размеру пакета).
-double amplitude = 0; //Амплитуда, в Мибибит/с.
-int    num_deltas = 0; //Количество -дельт от макс. размера сообщения.
-int    protocol = 0; //Протокол.
-int    host_size = 0; //Максимальный размер имени хоста.
-int    procnum = 0; //Количество процессов/потоков.
-//int  pack_size; //Количество пакетов в одной "пачке", т.е. её размер.
-//int    impulse_time = 0; //Время импульса, мс.
-int    impulse_time = 0; //Время импульса, мс.
-//long int start_pause; //Начальная пауза между отправкой \
+unsigned long long int  message_size = 0; //Максимальный размер сообщения (+ к размеру пакета).
+int  num_deltas = 0; //Количество -дельт от размера сообщения
+int  protocol = 0; //Протокол.
+int  host_size = 100; //Максимальный размер имени хоста.
+int  procnum = 1; //Количество процессов/потоков.
+int  pack_size = 1; //Количество пакетов в одной "пачке", т.е. её размер.
+long int start_pause = 0; //Начальная пауза между отправкой \
 "пачек" пакетов, в мс.
-long int period = 0; //Период между отправкой "пачек" пакетов, мс.
-int    debug = 0; //Флаг дебага. 0 - выкл.; 1 - вкл.; 2 - подробно.
+int  debug; //Флаг дебага. 0 - выкл.; 1 - вкл.; 2 - подробно.
 
 
 /* 
@@ -149,20 +144,18 @@ struct Settings *parser (int argc, char *argv[])
      * !Для доступа к полям структуры по указателю на неё надо 
      * использовать не "settings.поле", а "settings->поле"!
      * */
+    //struct Settings *settings;
     settings = NULL;
     settings = malloc(sizeof(struct Settings));
     
     /* Считываем настройки по-умолчанию из конфигурационного файла. */
-    //message_size = ini_getl("General", "MessageSize", -1, config);
-    amplitude = ini_getl("General", "Amplitude", -1, config);
+    message_size = ini_getl("General", "MessageSize", -1, config);
     num_deltas = ini_getl("General", "NumDeltas", -1, config);
     protocol = ini_getl("General", "Protocol", -1, config);
     host_size = ini_getl("General", "HostSize", -1, config);
     procnum = ini_getl("General", "ProcNum", -1, config);
-    //pack_size = ini_getl("General", "NumOfPacketsInPack", -1, config);
-    impulse_time = ini_getl("General", "ImpulseTime", -1, config);
-    //start_pause = ini_getl("General", "StartPause", -1, config);
-    period = ini_getl("General", "Period", -1, config);
+    pack_size = ini_getl("General", "NumOfPacketsInPack", -1, config);
+    start_pause = ini_getl("General", "StartPause", -1, config);
     debug = ini_getl("General", "Debug", -1, config);
     
     
@@ -177,30 +170,24 @@ struct Settings *parser (int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
     
-    //if (period < 7875/131072)
-    if (period == 0)
-        {
-            fprintf(stderr, \
-            "Заданный период равен нулю. \n");
-            free(settings);
-            exit(EXIT_FAILURE);
-        }
-    
     /* Считываем и парсим аргументы командной строки. 
      * Переменные под адрес хоста и порт.
      */
+    //!!! Надо нормально динамически выделить память под адрес хоста.
     
-    char *host = NULL;
-    if ((host = malloc(host_size*sizeof(char))) == NULL)
+    
+    char *host;
+    if ((host = malloc(host_size*sizeof(char)+1)) == NULL) //+1, но не помогло
     {
         printf("Ошибка выделения памяти под имя хоста! \n");
         settings->host = NULL;
         return settings;
     }
 
+    
     char *port[5] = {NULL};
     //! unsigned short int от 0 до 65535. %hi
-    //Функции getaddrinfo нужен char!
+    //Функции getaddrinfo нужен порт в виде char!
     
     /* Структура с параметрами работы парсера. */
     struct argp_option options[] =
@@ -238,8 +225,8 @@ struct Settings *parser (int argc, char *argv[])
         {        
         case 'h':
             {
-                //!host = arg; //Запись значения в переменную.
-                strcpy(host, arg); //Запись значения в переменную.
+                host = arg; //Запись значения в переменную.
+                //host[strlen(arg)+1] = '\0'; //Типа терминации, но она не помогла
                 break;
             }
         
@@ -296,7 +283,7 @@ struct Settings *parser (int argc, char *argv[])
     struct argp argp = {options, parse_opt, 0,\
         "sDDoSerr - the research programm for emulate shrew \
 (D)DoS attack traffic. \n\
-DDoSerr Copyright © 2019 Konstantin Pankov, Mikhail Riapolov. \n\
+DDoSerr Copyright © 2019-2021 Konstantin Pankov, Mikhail Riapolov. \n\
 (e-mail: konstantin.p.96@gmail.com) \v" 
 "To exit the program, press 'q' (or 'Q', or 'й', or 'Й'). \n\
 Please wait for full completion of the program runtime after pressing \
@@ -307,28 +294,37 @@ the exit button."};
     argp_parse(&argp, argc, argv, 0, 0, 0);
     
     
-    /* Считаем максимальный размер сообщения по амплитуде. */
-    message_size = llround(amplitude/1000*1024*1024-63); 
-    //Не компилируется без -lm.
-    //(Миб/мс без размера концевиков) = (Миб/с) -> (Миб/мс) -> (Киб/мс) 
-    //-> (бит/мс) -> -63 бита концевиков.
-    //long long int llround(double)
-    
-        
     /* Записываем конечные значения параметров в структуру. */
-    //strcpy (settings->host, "host"); //Строки записывать лучше так.
     
-    settings->host = host;
-    settings->port = *port;
+    //strcpy (settings->host, "host"); //Строки записывать таким образом.
+    
+    settings->host = host; //Передаётся адрес указателя
+    settings->port = *port; //Передаётся значение по указателю
     settings->message_size = message_size;
     settings->num_deltas = num_deltas;
     settings->protocol = protocol;
     settings->procnum = procnum;
-    //settings->pack_size = pack_size;
-    settings->impulse_time = impulse_time;
-    //settings->start_pause = start_pause;
-    settings->period = period;
+    settings->pack_size = pack_size;
+    settings->start_pause = start_pause;
     settings->debug = debug;
+
+    
+    if (settings->debug == 1)
+        {
+            printf("host pointer address: %p \n", host);
+            //printf("host pointer data: %s \n", *host); //ломает, ошибка сегментирования
+            printf("host pointer data: %s \n", host); //Работает
+            //printf("host pointer to pointer address: %p \n", *host);
+            printf("host pointer data: %c \n", *host);//даёт первый символ строки
+            //printf("host pointer data [0]: %c \n", host[0]);
+            //printf("host pointer data: %s \n", settings->host); //а так работает
+            printf("port pointer address: %p \n", port);
+            printf("port pointer data: %s \n", *port);
+        }
+        
+    //Очистка динамеческой памяти под хост.
+    //free(host);
+    //Всё ломает, т.к. возвращается значением адрес указателя.
     
     /* Возвращаем структуру со всеми настройками, 
      * включая и переопределённые. */

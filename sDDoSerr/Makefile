@@ -6,3 +6,6 @@ all: sDDoSerr
 
 sDDoSerr: $(SOURCES)
 	$(COMPILATOR) $(SOURCES) -o $(DIR)$(EXECUTABLE) -lm
+
+debug: $(SOURCES)
+	$(COMPILATOR) $(SOURCES) -o $(DIR)$(EXECUTABLE) -lm -fsanitize=address -g

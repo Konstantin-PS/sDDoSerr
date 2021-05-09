@@ -3,7 +3,7 @@
   * 
   * Модуль отправки UDP пакетов.
   * 
-  * v.1.0.5.11a от 22.05.19.
+  * v.1.0.5.12a от 18.04.21.
   **/
  
 /**
@@ -143,12 +143,12 @@ struct Socket udp_socket_open (struct Settings *settings)
             sock = socket(ht->ai_family, ht->ai_socktype,\
                      ht->ai_protocol);
             if (sock == -1)
-            continue;
+                continue;
+            else close(sock);
             
             if (connect(sock, ht->ai_addr, ht->ai_addrlen) != -1)
-            break;  //Успешное соединение.
-
-            close(sock); //Закрытие сокета, если не получилось.
+                break;  //Успешное соединение.
+            else close(sock); //Закрытие сокета, если не получилось.
         }
     
     // Адрес не найден.
@@ -176,8 +176,6 @@ struct Socket udp_socket_open (struct Settings *settings)
     
     /* Освобождаем память. */
     freeaddrinfo(host_info);
-    //freeaddrinfo(ht); //Не надо чистить, 
-    //т.к. это указатель на уже очищенную память.
     
     return udp_socket;
  }
@@ -197,11 +195,16 @@ struct Socket udp_socket_open (struct Settings *settings)
     }
     
     /*
-    //Для терминированного сообщения.
+    //Для терминированного сообщения (старый способ).
     if (stat = sendto(udp_socket.sock, message_struct.message,\
         message_struct.mes_size+1, 0,\
         (struct sockaddr *)&udp_socket.address,\
         sizeof(udp_socket.address)) != message_struct.mes_size+1)
+        {
+            fprintf(stderr,\
+            "Ошибка / частичная запись в сокет. Записано: %i \n", stat);
+            return 1;
+        }
     */
     
     if (stat = sendto(udp_socket.sock, message_struct.message,\
@@ -209,9 +212,9 @@ struct Socket udp_socket_open (struct Settings *settings)
         (struct sockaddr *)&udp_socket.address,\
         sizeof(udp_socket.address)) != message_struct.mes_size)
         {
-            
             fprintf(stderr,\
-            "Ошибка / частичная запись в сокет. Записано: %i \n", stat);
+            "Ошибка / частичная запись в сокет. Записано: %i из %i \n",\
+            stat, message_struct.mes_size);
             return 1;
         }
     

@@ -3,7 +3,7 @@
   * 
   * Основной модуль программы.
   * 
-  * v.1.3.3.22a от 30.10.19.
+  * v.1.4.1.23a от 11.04.21.
   * !Не забывать изменять *argp_program_version 
   * под новую версию в парсере!
   **/
@@ -72,7 +72,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 #include "udp_sender.h"
 
 //#include <sys/timeb.h>  // ftime, timeb (для времени в миллисекундах).
-#include <sys/time.h>
+#include <sys/time.h> 
 
 //Для неблокированного терминала.
 #include <termio.h>
@@ -97,16 +97,15 @@ long long int get_time ()
 {
   struct timeb timer_msec;
   long long int timestamp_msec; // timestamp в миллисекундах.
-  if (!ftime(&timer_msec)) 
-    {
-        timestamp_msec = ((long long int) timer_msec.time) * 1000ll +
+  if (!ftime(&timer_msec)) {
+  	timestamp_msec = ((long long int) timer_msec.time) * 1000ll +
   						(long long int) timer_msec.millitm;
-    }
+  }
   else 
-    {
-        timestamp_msec = -1;
-    }
-  //printf("%lld milliseconds since Epoch. \n", timestamp_msec);
+  {
+  	timestamp_msec = -1;
+  }
+  printf("%lld milliseconds since Epoch\n", timestamp_msec);
   return timestamp_msec;
 }
 */
@@ -180,22 +179,6 @@ int main (int argc, char *argv[])
     if (settings->debug == 1) //Если установлен флаг дебага.
         {printf("Запуск функции парсера выполнен. \n");}
     
-    //Проверка настроек периода.
-    if (settings->period < settings->impulse_time)
-        {
-            printf("Заданный период меньше, чем время импульса! \n");
-            fprintf(log, "\n%s\n",\
-            "Заданный период меньше, чем время импульса!");
-            
-            /* Очистка динамической памяти под структуру настроек. */
-            free(settings);
-                
-            //Закрытие файла лога.
-            fclose(log);
-                
-            exit(EXIT_FAILURE);
-        }
-    
     if (settings->debug == 1)
         {printf("Запуск функции создания сокета. \n");}
         
@@ -232,10 +215,10 @@ int main (int argc, char *argv[])
        
             //!Дебажный вывод содержимого массива.
             if (settings->debug == 1)
-                {
-                    printf("Message_deltas [%i]: %d \n", j,\
-                    message_deltas[j]);
-                }
+                {printf("Message_deltas [%i]: %d \n", j,\
+                    message_deltas[j]);}
+            //printf("Message_deltas0 [%i]: %d \n", j,\
+            random() % settings->message_size-1);
         }
     if (settings->debug == 1)
         {printf("\n");} //! Отладка.
@@ -243,12 +226,14 @@ int main (int argc, char *argv[])
     
     
     if (settings->debug == 1)
-        {printf("Динамическое выделение памяти под сообщение. \n");}
+        {printf("Динамическое выделение памяти под сообщение. \n");
+        printf("message_size: %i \n", settings->message_size);
+        }
     
     /* Динамическое выделение памяти под полное сообщение. */
     char *message_full;
     if ((message_full = \
-    malloc(settings->message_size*sizeof(char))) == NULL)
+    malloc(settings->message_size*sizeof(char)+1)) == NULL) //+1 чтобы работало правильно.
         {
             printf("Ошибка выделения памяти под полное сообщение! \n");
             fprintf(log, "%s \n",\
@@ -256,7 +241,7 @@ int main (int argc, char *argv[])
             //Очистка динамической памяти под полное сообщение.
             //free(message_full);
             
-            /* Очистка динамической памяти под структуру настроек. */
+            //Очистка динамической памяти под структуру настроек.
             free(settings);
                 
             //Закрытие сокета.
@@ -268,19 +253,25 @@ int main (int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
     
+    if (settings->debug == 1)
+    {printf("Память под сообщение выделена успешно. \n");}
+    
     /* Заполнение полного сообщения псевдорандомными символами. */
     //ASCII_START 32, ASCII_END 126
-    for (int i = 0; i < settings->message_size; i++)
+    for (int i = 0; i <= settings->message_size; i++)
     {
         message_full[i] = (char) (random() % (126-32))+32;
         //message_full[i] = '0'; //(или) Забивание нулями.
     }
-    //message_full[message_size] = '\0'; //Терминация.
+    //message_full[settings->message_size] = '\0'; //Терминация.
     
-    //Вывод нетерминированного сообщения.
+    //Вывод (не)терминированного сообщения.
     if (settings->debug == 1)
-        {printf("Полное сообщение: %.*s \n", settings->message_size,\
-            message_full);}
+        {
+            printf("Полное сообщение: %.*s \n", settings->message_size,\
+            message_full);
+            //printf("Полное сообщение s: %s \n", message_full); - ошибки.
+        }
             
     if (settings->debug == 1)
         {printf("Вход в цикл отправки одной пачки. \n");}
@@ -300,6 +291,7 @@ int main (int argc, char *argv[])
     /* Начальное и конечное время отправки одного сообщения. */
     long long int message_start_time = 0;
     long long int message_end_time = 0;
+    long long int message_time = 0;
     
     /* Пауза между отправкой "пачек". */
     long int start_pause = 0;
@@ -315,6 +307,17 @@ int main (int argc, char *argv[])
 
     int key = 0; //Считанный код нажатой кнопки.
     
+    //Подготовка
+    //! Для ф-ции nanosleep() - пауза между отправками "пачек".
+    /* Структура с настройками паузы перед повтором отправки "пачки". */
+    //Оставлена внутри цикла, т.к. это время должно изменяться.
+    struct timespec ns_time, ns_time2;
+    
+    //Переменные для временени паузы перед повтором отправки "пачек".
+    time_t ns_time_s = 0;
+    long ns_time_ns = 0;
+    
+    /** Начало цикла отправки "пачек" пакетов. **/
     for (;;)
     {
         /* Обработка нажатий кнопок. */
@@ -324,15 +327,35 @@ int main (int argc, char *argv[])
          * из бесконечного цикла. */
         if (key == 'q' || key == 'Q' || key == 185 || key == 153)
             {
-                printf("\nExit. \n");
+                printf("\n Exit. \n");
                 break;
             }
     
+    //Получение времени начала отправки.
     if (settings->debug == 2)
             {                
                 start_time = get_time();
             }
     
+    //Конвертация времени паузы
+    if (settings->start_pause < 1000)
+    {
+        ns_time_s = 0;
+        ns_time_ns = settings->start_pause * 1000000;
+        ns_time.tv_sec = ns_time_s; //Время паузы, в секундах.
+        //В наносекундах. С переводом из мс в нс.
+        ns_time.tv_nsec = ns_time_ns; 
+    }
+    //100000000 ns = 100 ms.
+    
+    if (settings->start_pause >= 1000)
+    {
+        ns_time_s = settings->start_pause / 1000; //Целое = секунды.
+        ns_time_ns = (settings->start_pause % 1000) * 1000000;
+        //Остаток = микросекунды, переводим в наносекунды.
+        ns_time.tv_sec = ns_time_s;
+        ns_time.tv_nsec = ns_time_ns;
+    }
     
     
     if (settings->debug >= 1)
@@ -343,64 +366,36 @@ int main (int argc, char *argv[])
                 cycle_counter, "-я итерация полного цикла.");
                 //(файл или поток как файл, форматирование (полное), 
                 //потом данные.)
+                
+                printf("Пауза между 'пачками': %i сек. %li нс. \n",\
+                ns_time_s, ns_time_ns);
             }
     
     
-    /** Цикл по impulse_time на отправку ОДНОЙ "пачки" пакетов.**/
+    /** Цикл по settings->pack_size на отправку ОДНОЙ "пачки" пакетов.**/
     
-    /*
     if (settings->debug == 2)
-        {
-            //Получение точного времени начала отправки "пачки".
-            pack_start_time = get_time();
-        }
-    */
-    //Получение точного времени начала отправки "пачки".
-    pack_start_time = get_time(); //Работает.
-    
-    if (settings->debug >= 1)
-    {
-        printf("pst: %lld \n", pack_start_time);
-        printf("impulse_time до цикла пачек: %i \n",\
-        settings->impulse_time);
-    }
+            {                
+                pack_start_time = get_time();
+            }
     
     //int delta, di = 0; //Временные переменные для цикла.
     int di = 0; //Счётчик итерации для дельт.
-    //for (int i = 1; i <= settings->pack_size; i++) //while
-    int i = 1; //Счётчик итераций цикла.
-    
-    //!Забагованный цикл!
-    /*
-     * В этом забагованном цикле функция получения времени работает
-     * очень криво, выдавая странные значения.
-     * Также ломается и получение данных из структуры настроек
-     * (settings->impulse_time).
-     * 
-     */
-    
-    long long int pack_time = settings->impulse_time+pack_start_time;
-    while (message_start_time <= pack_time)
+    for (int i = 1; i <= settings->pack_size; i++)
     {
-        //Получение времени начала отправки сообщения.
-        message_start_time = get_time();
-        
-        int i = 1; //Счётчик итераций цикла.
         if (settings->debug >= 1)
             {
                 printf("%i-я итерация цикла пачки. \n", i);
                 fprintf(log, "%i%s \n", i, "-я итерация цикла пачки.");
                 //(файл или поток как файл, форматирование (полное), 
                 //потом данные.)
-                printf("message_start_time: %li, pst+it: %lld, pack_start_time: %lld, it: %i \n",\
-                message_start_time, pack_time, pack_start_time, settings->impulse_time);
             }
             
         
         /**Считывание значения -дельты из message_deltas,
         * "откусывание" от полного сообщения
-        * и запись в поле структуры. Вычисление и запись в поле 
-        * структуры размера кропнутого сообщения.
+        * и запись в поле структуры. 
+        * Вычисление и запись размера кропнутого сообщения.
         * Проверять маркер цикла считывания на выход за размер 
         * settings->num_deltas.
         **/
@@ -420,13 +415,11 @@ int main (int argc, char *argv[])
         /* В конце считывания дельт инкремент счётчика. */
         di++;
         
-        if (settings->debug == 1)
-            {printf("Запись кропнутого сообщения в поле структуры \n");}
-        
         
         //Отладка.
-        if (settings->debug == 1)
+        if (settings->debug >= 1)
             {
+                printf("Запись кропнутого сообщения в поле структуры \n");
                 printf("Обрезанное сообщение: %.*s \n",\
                 message_struct.mes_size, message_struct.message);
                 printf("Размер обрезанного сообщения: %i \n",\
@@ -434,8 +427,14 @@ int main (int argc, char *argv[])
             }
             
         /* Вызов функции отправки сообщений. */
-        if (settings->debug == 1)
+        if (settings->debug >= 1)
             {printf("Вызов функции отправки. \n");}
+                
+        if (settings->debug == 2)
+            {    
+                //Получение времени начала отправки сообщения.
+                message_start_time = get_time();
+            }
     
         
         //int udp_send = udp_sender (udp_socket, message_struct);
@@ -469,58 +468,29 @@ int main (int argc, char *argv[])
                 */
             }
         
-        //Зануление полей структуры (если потребуется).
+        //Зануление полей структуры (если требуется).
         
-        i++;
+        if (settings->debug == 2)
+            {
+                //Получение времени окончания отправки сообщения.
+                message_end_time = get_time();
+                message_time = message_end_time - message_start_time;
+                printf("Затраченное время на отправку сообщения:"\
+                " %lld мкс \n", message_time);
+            }
+        
     }
     //! Конец цикла на отправку одной "пачки" пакетов.
-    //Получение времени окончания передачи "пачки".
-    pack_end_time = get_time();
     
     /* Вывод времени отправки одной "пачки" пакетов. */
     if (settings->debug == 2)
-            {   
+            {
+                pack_end_time = get_time();
+                
                 pack_time = pack_end_time - pack_start_time;
                 printf("Затраченное время на отправку 'пачки' пакетов"\
                 " %lld мкс. \n", pack_time);
             }
-    
-    //Пауза между отправкой "пачек".
-    start_pause = settings->period - settings->impulse_time;
-    
-    //! Для ф-ции nanosleep() - пауза между отправками "пачек".
-    /* Структура с настройками паузы перед повтором отправки "пачки". */
-    //Оставлена внутри цикла, т.к. это время должно изменяться.
-    struct timespec ns_time, ns_time2;
-    
-    //Переменные для временени паузы перед повтором отправки "пачек".
-    time_t ns_time_s;
-    long ns_time_ns;
-    
-    if (start_pause < 1000)
-    {
-        ns_time_s = 0;
-        ns_time_ns = start_pause * 1000000;
-        ns_time.tv_sec = ns_time_s; //Время паузы, в секундах.
-        //В наносекундах. С переводом из мс в нс.
-        ns_time.tv_nsec = ns_time_ns; 
-    }
-    //100000000 ns = 100 ms.
-    
-    if (start_pause >= 1000)
-    {
-        ns_time_s = start_pause / 1000; //Целое = секунды.
-        ns_time_ns = (start_pause % 1000) * 1000000;
-        //Остаток = микросекунды, переводим в наносекунды.
-        ns_time.tv_sec = ns_time_s;
-        ns_time.tv_nsec = ns_time_ns;
-    }
-    
-    if (settings->debug >= 1)
-        {
-            printf("Пауза между 'пачками': %i сек. %li нс. \n",\
-            ns_time_s, ns_time_ns);
-        }
     
     /** Вызов ф-ции nanosleep() для создания паузы 
      * между отправкой "пачек". **/
@@ -543,8 +513,7 @@ int main (int argc, char *argv[])
             {                
                 end_time = get_time();
                 elapsed_time = end_time - start_time;
-                printf("\nВремя полного цикла: %lli мкс.\n",\
-                elapsed_time);
+                printf("Время полного цикла: %lld мкс.\n", elapsed_time);
             }
     
     }
@@ -555,7 +524,7 @@ int main (int argc, char *argv[])
         {printf("Закрытие сокета. \n");}
     
     /* Закрытие сокета. */
-    int udp_close = udp_closer (udp_socket);
+    int udp_close = udp_closer(udp_socket);
 
     if (settings->debug == 1)
         {
@@ -570,7 +539,7 @@ int main (int argc, char *argv[])
     if (settings->debug == 1)
         {
             printf("*DEBUG* \n" \
-            "host = %s, port = %s, message_size = %llu, "\
+            "host = %s, port = %s, message_size = %i, "\
             "protocol = %s, procnum = %i \n" \
             "*DEBUG* \n",\
             settings->host, settings->port, settings->message_size,\
@@ -578,13 +547,28 @@ int main (int argc, char *argv[])
         }
         
     
+    if (settings->debug == 1)
+        {
+            printf("host: %p, host_string: %s \n",\
+            settings->host, settings->host);
+        }
+    
         
     if (settings->debug == 1)
         {
          printf("Очистка динамической памяти под хост. \n");
         }
+        
     /* Очистка динамической памяти под хост. */
-    free(settings->host); 
+    free(settings->host);
+    settings->host = NULL;
+    //Проблема, возможно, в том, что это, похоже, указатель на указатель.
+    //Адрес передаётся правильно, но что-то не работает и память не очищается.
+    //Возможно, из-за чего-то ломается куча и этот адрес более не работает 
+    //(что есть бред, т.к. данные по нему получить можно).
+    
+    //char *host_addr = settings->host;
+    //free(host_addr);
     
     
     if (settings->debug == 1)
@@ -593,6 +577,7 @@ int main (int argc, char *argv[])
         }
     /* Очистка динамической памяти под структуру настроек. */
     free(settings);
+    settings = NULL;
     
     
     /* Получение конечного времени и запись в лог. */
@@ -601,9 +586,6 @@ int main (int argc, char *argv[])
     fprintf(log, "\n%s %s%s \n", "sDDoSerr остановлен ",\
     current_time, ".");
     
-    
-    if (settings->debug == 1)
-        {printf("Закрытие файла лога. \n");}
         
     /* Закрытие файла лога. */
     fclose(log);
