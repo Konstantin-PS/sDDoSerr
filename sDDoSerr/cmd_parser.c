@@ -5,7 +5,7 @@
   * Для парсинга конфигурационного ini файла используется 
   * сторонний модуль minIni.
   * 
-  * v.1.3.6.23a от 11.04.21.
+  * v.1.3.6.24a от 10.05.21.
   **/
 
 /**
@@ -78,7 +78,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.4.1.23a";
+const char *argp_program_version = "v.1.4.1.24a";
 
 //Функция парсера.
 /*
@@ -173,11 +173,9 @@ struct Settings *parser (int argc, char *argv[])
     /* Считываем и парсим аргументы командной строки. 
      * Переменные под адрес хоста и порт.
      */
-    //!!! Надо нормально динамически выделить память под адрес хоста.
     
-    
-    char *host;
-    if ((host = malloc(host_size*sizeof(char)+1)) == NULL) //+1, но не помогло
+    char *host = NULL;
+    if ((host = malloc(host_size*sizeof(char))) == NULL)
     {
         printf("Ошибка выделения памяти под имя хоста! \n");
         settings->host = NULL;
@@ -225,8 +223,9 @@ struct Settings *parser (int argc, char *argv[])
         {        
         case 'h':
             {
-                host = arg; //Запись значения в переменную.
-                //host[strlen(arg)+1] = '\0'; //Типа терминации, но она не помогла
+                strcpy(host, arg); //Запись значения в переменную.
+                //host = arg; //Запись значения, плохой вариант!
+                //host[strlen(arg)+1] = '\0'; //Типа терминации.
                 break;
             }
         
@@ -322,10 +321,6 @@ the exit button."};
             printf("port pointer data: %s \n", *port);
         }
         
-    //Очистка динамеческой памяти под хост.
-    //free(host);
-    //Всё ломает, т.к. возвращается значением адрес указателя.
-    
     /* Возвращаем структуру со всеми настройками, 
      * включая и переопределённые. */
     return settings;

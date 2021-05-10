@@ -3,9 +3,9 @@
   * 
   * Основной модуль программы.
   * 
-  * v.1.4.1.23a от 11.04.21.
+  * v.1.4.1.24a от 10.05.21.
   * !Не забывать изменять *argp_program_version 
-  * под новую версию в парсере!
+  * под новую версию в парсере (cmd_parser.c)!
   **/
 
 /**
@@ -205,6 +205,9 @@ int main (int argc, char *argv[])
     
     if (settings->debug == 1)
         {printf("Отладка. \n");} //! Отладка.
+        
+    if (settings->num_deltas > 0)
+    {
     /* Заполнение массива -дельт псевдорандомными числами. */
     for (int j = 0; j <= settings->num_deltas; j++)
         {
@@ -220,6 +223,14 @@ int main (int argc, char *argv[])
             //printf("Message_deltas0 [%i]: %d \n", j,\
             random() % settings->message_size-1);
         }
+    }
+    if (settings->num_deltas == 0)
+        {printf("Используется полное сообщение. Дельты отключены. \n");}
+    if (settings->num_deltas < 0)
+        {printf("Задано некорректное (отрицательное) значение дельт. \
+            Будет использовано полное сообщение. \n");}
+    
+    
     if (settings->debug == 1)
         {printf("\n");} //! Отладка.
     
@@ -231,9 +242,11 @@ int main (int argc, char *argv[])
         }
     
     /* Динамическое выделение памяти под полное сообщение. */
-    char *message_full;
+    char *message_full = NULL;
     if ((message_full = \
-    malloc(settings->message_size*sizeof(char)+1)) == NULL) //+1 чтобы работало правильно.
+    //malloc(settings->message_size*sizeof(char))) == NULL)
+    malloc(settings->message_size*sizeof(char)+1)) == NULL) 
+    //+1 чтобы работало правильно, но не помогло.
         {
             printf("Ошибка выделения памяти под полное сообщение! \n");
             fprintf(log, "%s \n",\
@@ -263,7 +276,7 @@ int main (int argc, char *argv[])
         message_full[i] = (char) (random() % (126-32))+32;
         //message_full[i] = '0'; //(или) Забивание нулями.
     }
-    //message_full[settings->message_size] = '\0'; //Терминация.
+    message_full[settings->message_size] = '\0'; //Терминация.
     
     //Вывод (не)терминированного сообщения.
     if (settings->debug == 1)
@@ -400,6 +413,8 @@ int main (int argc, char *argv[])
         * settings->num_deltas.
         **/
         
+        if (settings->num_deltas > 0)
+        {
         if (di > settings->num_deltas)
             {
                 di = 0; //Если дельт больше, чем пакетов в пачке, 
@@ -414,6 +429,13 @@ int main (int argc, char *argv[])
         
         /* В конце считывания дельт инкремент счётчика. */
         di++;
+        }
+        
+        if (settings->num_deltas <= 0)
+            {
+                message_struct.mes_size = settings->message_size;
+            }
+        
         
         
         //Отладка.
@@ -540,7 +562,7 @@ int main (int argc, char *argv[])
         {
             printf("*DEBUG* \n" \
             "host = %s, port = %s, message_size = %i, "\
-            "protocol = %s, procnum = %i \n" \
+            "protocol = %i, procnum = %i \n" \
             "*DEBUG* \n",\
             settings->host, settings->port, settings->message_size,\
             settings->protocol, settings->procnum);
@@ -562,13 +584,7 @@ int main (int argc, char *argv[])
     /* Очистка динамической памяти под хост. */
     free(settings->host);
     settings->host = NULL;
-    //Проблема, возможно, в том, что это, похоже, указатель на указатель.
-    //Адрес передаётся правильно, но что-то не работает и память не очищается.
-    //Возможно, из-за чего-то ломается куча и этот адрес более не работает 
-    //(что есть бред, т.к. данные по нему получить можно).
-    
-    //char *host_addr = settings->host;
-    //free(host_addr);
+    //Проблема была в методе записи переменной хоста.
     
     
     if (settings->debug == 1)

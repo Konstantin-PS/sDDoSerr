@@ -3,7 +3,7 @@
   * 
   * Модуль отправки UDP пакетов.
   * 
-  * v.1.0.5.12a от 18.04.21.
+  * v.1.0.5.13a от 10.05.21.
   **/
  
 /**
@@ -144,11 +144,12 @@ struct Socket udp_socket_open (struct Settings *settings)
                      ht->ai_protocol);
             if (sock == -1)
                 continue;
-            else close(sock);
+            //else close(sock);
             
             if (connect(sock, ht->ai_addr, ht->ai_addrlen) != -1)
                 break;  //Успешное соединение.
-            else close(sock); //Закрытие сокета, если не получилось.
+            //else close(sock); //Закрытие сокета, если не получилось.
+            close(sock);
         }
     
     // Адрес не найден.
@@ -192,6 +193,7 @@ struct Socket udp_socket_open (struct Settings *settings)
     {
         printf("Message from udp_sender: %.*s \n",\
         message_struct.mes_size, message_struct.message);
+        printf("Size of the message: %i \n", message_struct.mes_size);
     }
     
     /*
