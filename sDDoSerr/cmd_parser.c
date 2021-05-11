@@ -1,5 +1,5 @@
 /**
-  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
+  * sDDoSerr - the research programm for simulate shrew (D)DoS attack.
   * 
   * Модуль парсера командной строки.
   * Для парсинга конфигурационного ini файла используется 
@@ -78,50 +78,22 @@ sDDoSerr Copyright © 2019 Константин Панков
 
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.4.1.24a";
+const char *argp_program_version = "v.1.4.2.25a";
 
 //Функция парсера.
-/*
- *  Надо придумать входные параметры для программы.
- * Сделать обязательными.
- * -h, --host - адрес (с двоеточием, т.к. нужен аргумент).
- * -p, --port - порт, на который отправляются пакеты.
- * 
- * Необязательные, из конфига.
- * -s, --size - размер UDP пакета (количество байт нулей или 
- * по предопределённой константе копированием). Минимум - 46 байт, это
- * только заголовок.
- * --proc - Количество процессов/потоков. Пока не используется.
- * _____________________________________________________________________
- * Необязательные параметры, т.к. должны быть в конфиг-файле.
- * На самом деле, их можно изначально задать в программе, а потом,
- * если нужно, изменить при запуске соответствующим параметром.
- * ? --buffsize - размер буффера.
- * ? --protocol - протокол, по умолчанию любой (ai_protocol = 0).
- * _____________________________________________________________________
- * Должны расчитываться в программе (ключи не нужны?). 
- * --duration -  время дительности импульса (определяет количество 
- * отсылаемых пакетов за указанное время). Порядка 100 мс. 
- * Больше, чем RTT для конкретного случая (RTT из пинга). 
- * До заполнения буффера маршрутизатора.
- * --period - период импульсов (время между восходящми фронтами). 
- * Должен расчитываться автоматически из RTO (примерно 1 сек.) - 
- * он должен быть немного меньше, чем RTO.
- * ? --amplitude - амплитуда импульса. Пока не знаю точно как её можно 
- * будет задавать, но, скорее всего, кол-вом одновременных потоков.
- */
 
 /* Конфигурационный файл. */
 const char config[] = "config.ini";
 
 
-//Внутренние переменные со значениями из конфиг-файла.
-unsigned long long int  message_size = 0; //Максимальный размер сообщения (+ к размеру пакета).
-int  num_deltas = 0; //Количество -дельт от размера сообщения
+//Внутренние переменные со значениями из конфиг-файла. Инициализация.
+unsigned long long int  message_size = 0; //Макс. размер сообщения \
+(+ к 42 байтам заголовков и концевиков пакета).
+int  num_deltas = 0; //Количество -дельт от размера сообщения.
 int  protocol = 0; //Протокол.
 int  host_size = 100; //Максимальный размер имени хоста.
 int  procnum = 1; //Количество процессов/потоков.
-int  pack_size = 1; //Количество пакетов в одной "пачке", т.е. её размер.
+int  pack_size = 1; //Количество пакетов в одной "пачке".
 long int start_pause = 0; //Начальная пауза между отправкой \
 "пачек" пакетов, в мс.
 int  debug; //Флаг дебага. 0 - выкл.; 1 - вкл.; 2 - подробно.
@@ -144,7 +116,7 @@ struct Settings *parser (int argc, char *argv[])
      * !Для доступа к полям структуры по указателю на неё надо 
      * использовать не "settings.поле", а "settings->поле"!
      * */
-    //struct Settings *settings;
+    
     settings = NULL;
     settings = malloc(sizeof(struct Settings));
     
@@ -225,7 +197,6 @@ struct Settings *parser (int argc, char *argv[])
             {
                 strcpy(host, arg); //Запись значения в переменную.
                 //host = arg; //Запись значения, плохой вариант!
-                //host[strlen(arg)+1] = '\0'; //Типа терминации.
                 break;
             }
         
@@ -297,8 +268,8 @@ the exit button."};
     
     //strcpy (settings->host, "host"); //Строки записывать таким образом.
     
-    settings->host = host; //Передаётся адрес указателя
-    settings->port = *port; //Передаётся значение по указателю
+    settings->host = host;
+    settings->port = *port;
     settings->message_size = message_size;
     settings->num_deltas = num_deltas;
     settings->protocol = protocol;
@@ -311,11 +282,7 @@ the exit button."};
     if (settings->debug == 1)
         {
             printf("host pointer address: %p \n", host);
-            //printf("host pointer data: %s \n", *host); //ломает, ошибка сегментирования
-            printf("host pointer data: %s \n", host); //Работает
-            //printf("host pointer to pointer address: %p \n", *host);
-            printf("host pointer data: %c \n", *host);//даёт первый символ строки
-            //printf("host pointer data [0]: %c \n", host[0]);
+            printf("host pointer data: %s \n", host);
             //printf("host pointer data: %s \n", settings->host); //а так работает
             printf("port pointer address: %p \n", port);
             printf("port pointer data: %s \n", *port);

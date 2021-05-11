@@ -1,9 +1,9 @@
 /**
-  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
+  * sDDoSerr - the research programm for simulate shrew (D)DoS attack.
   * 
   * Модуль отправки UDP пакетов.
   * 
-  * v.1.0.5.13a от 10.05.21.
+  * v.1.0.6.14a от 11.05.21.
   **/
  
 /**
@@ -140,28 +140,33 @@ struct Socket udp_socket_open (struct Settings *settings)
     
     for (ht = host_info; ht != NULL; ht = ht->ai_next)
         {
+            //Создание сокета.
             sock = socket(ht->ai_family, ht->ai_socktype,\
                      ht->ai_protocol);
             if (sock == -1)
-                continue;
-            //else close(sock);
-            
-            if (connect(sock, ht->ai_addr, ht->ai_addrlen) != -1)
-                break;  //Успешное соединение.
-            //else close(sock); //Закрытие сокета, если не получилось.
-            close(sock);
+                {
+                    close(sock); //Закрытие сокета, \
+                    если не получилось создать.
+                    //continue; //Продолжаем перебор адресов.
+                }
+            else
+            {
+                //Подключение.
+                if (connect(sock, ht->ai_addr, ht->ai_addrlen) != -1)
+                    {
+                        printf("Соединение с хостом выполнено. \n");
+                        break;  //Успешное соединение. \
+                        Завершение перебора.
+                    }
+                else close(sock); //Закрытие сокета, \
+                если не получилось подключиться.
+            }
         }
     
-    // Адрес не найден.
+    //Если адрес не найден.
     if (ht == NULL) 
         {
             fprintf(stderr, "Невозможно соединиться с хостом! \n");
-            printf("Невозможно соединиться с хостом! \n");
-            
-            /* Выход при ошибке не нужен,
-             * т.к. цель атаки - создание ошибок.
-            exit(EXIT_FAILURE);
-            */ 
         }
     
     
@@ -196,18 +201,6 @@ struct Socket udp_socket_open (struct Settings *settings)
         printf("Size of the message: %i \n", message_struct.mes_size);
     }
     
-    /*
-    //Для терминированного сообщения (старый способ).
-    if (stat = sendto(udp_socket.sock, message_struct.message,\
-        message_struct.mes_size+1, 0,\
-        (struct sockaddr *)&udp_socket.address,\
-        sizeof(udp_socket.address)) != message_struct.mes_size+1)
-        {
-            fprintf(stderr,\
-            "Ошибка / частичная запись в сокет. Записано: %i \n", stat);
-            return 1;
-        }
-    */
     
     if (stat = sendto(udp_socket.sock, message_struct.message,\
         message_struct.mes_size, 0,\

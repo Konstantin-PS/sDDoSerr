@@ -1,5 +1,5 @@
 /**
-  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
+  * sDDoSerr - the research programm for simulate shrew (D)DoS attack.
   * 
   * Заголовочный файл для парсера командной строки.
   * 

