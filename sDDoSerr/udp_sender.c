@@ -3,7 +3,7 @@
   * 
   * Модуль отправки UDP пакетов.
   * 
-  * v.1.0.6.14a от 11.05.21.
+  * v.1.0.6.16a от 21.05.21.
   **/
  
 /**
@@ -74,6 +74,8 @@ sDDoSerr Copyright © 2019 Константин Панков
 #include "cmd_parser.h" //Для структуры настроек.
 #include "udp_sender.h"
 
+//#include <inttypes.h> //Для вывода таких типов данных как unit32_t
+#include <arpa/inet.h> //Для inet_ntop
 
 /* Декларация структуры сокета. */
 struct Socket udp_socket;
@@ -138,33 +140,91 @@ struct Socket udp_socket_open (struct Settings *settings)
     /** Возможно, надо будет убрать проверку на подключение и сразу 
         отсылать UDP пакет без connect. **/
     
+    //Функция получения целочисленного адреса сокета\
+      для дальнейшего преобразования в читаемый адрес.
+    //https://stackoverflow.com/questions/1824279/how-to-get-ip-address-from-sockaddr
+    // get sockaddr, IPv4 or IPv6:
+    void *get_in_addr(struct sockaddr *sa)
+    {
+        if (sa->sa_family == AF_INET)
+            return &(((struct sockaddr_in*)sa)->sin_addr);
+        return &(((struct sockaddr_in6*)sa)->sin6_addr);
+    }
+    
     for (ht = host_info; ht != NULL; ht = ht->ai_next)
         {
             //Создание сокета.
             sock = socket(ht->ai_family, ht->ai_socktype,\
                      ht->ai_protocol);
+            
+            /// Отладка
+                //printf("ht->ai_addrlen: %d \n", ht->ai_addrlen); 
+                //printf("ht->ai_addr->sa_family: AF_%i \n",\
+                ht->ai_addr->sa_family);
+                //printf("ht->ai_family: AF_%i \n", ht->ai_family);
+            ///
+            
+            //Перевод целочисленного адреса сокета в человекочитаемый.
+            char s[INET6_ADDRSTRLEN];
+            inet_ntop(ht->ai_family,\
+             get_in_addr((struct sockaddr *)ht->ai_addr), s, sizeof s);
+            printf("Обнаружен адрес: %s \n", s);
+            
+            
             if (sock == -1)
                 {
                     close(sock); //Закрытие сокета, \
                     если не получилось создать.
-                    //continue; //Продолжаем перебор адресов.
+                    printf("Ошибка создания сокета. Сокет закрыт. \n");
                 }
+                
+                //continue; //НЕТ 1 от sendto() при использовании этого оператора именно здесь!
+                //Т.е. тупо пропускается кусок с коннектом.
+                //Или если выкинуть кусок с выходом из цикла при успешном соединении.
+                //1 итерация для IP. 2 итерации для символьного адреса ya.ru. 10 итераций для google.com.
+                //Если раскомментировать кусок кода с коннектом и выходом, то на google.com - 1 итерация,
+                //если инкримент счётчика в самом начале.
+
+           /// Кусок с коннектом, без которого всё работает.
+           /**
             else
             {
-                //Подключение.
+                //Подключение. Не обязательно использовать.
+                //Из-за него вылезает ошибка отправки.
                 if (connect(sock, ht->ai_addr, ht->ai_addrlen) != -1)
                     {
                         printf("Соединение с хостом выполнено. \n");
+                        //Зануление более ненужного указателя\
+                         (вместе с полями адреса)\
+                         при режиме с соединением, чтобы ошибок не было\
+                         (см. коммент около ф-ции sendto()).
+                        //Но почему-то всё равно не работает правильно.
+                        ht = NULL;
                         break;  //Успешное соединение. \
                         Завершение перебора.
                     }
                 else close(sock); //Закрытие сокета, \
                 если не получилось подключиться.
             }
+            **/
+           ///
         }
     
+    //Перевод целочисленного адреса сокета в человекочитаемый.
+    char s[INET6_ADDRSTRLEN];
+    inet_ntop(host_info->ai_family,\
+     get_in_addr((struct sockaddr *)host_info->ai_addr), s, sizeof s);
+    printf("Использован адрес: %s \n", s);
+    //Без коннекта используется в сокете только первый адрес,\
+     остальные игнорируются, хоть цикл и проходит через них.\
+     Т.е., по сути, выполняется задача куска с коннектом - соединиться\
+     с первым рабочим адресом.
+    
+    
     //Если адрес не найден.
-    if (ht == NULL) 
+    //if (ht == NULL) 
+    if (host_info == NULL) //Т.к. этот указатель не обнуляется,\
+     в отличае от указателя ht.
         {
             fprintf(stderr, "Невозможно соединиться с хостом! \n");
         }
@@ -192,7 +252,8 @@ struct Socket udp_socket_open (struct Settings *settings)
  struct Message message_struct)
 {    
     /* Отправка пакетов (датаграмм). */
-    int stat = 0;
+    //int stat = 0;
+    ssize_t stat = 0;
     
     if (settings->debug == 1)
     {
@@ -201,6 +262,12 @@ struct Socket udp_socket_open (struct Settings *settings)
         printf("Size of the message: %i \n", message_struct.mes_size);
     }
     
+    /*
+     * If sendto() is used on a connection-mode (SOCK_STREAM, SOCK_SEQPACKET) socket, 
+     * the arguments dest_addr and addrlen are ignored (and the error EISCONN may be returned when they are not NULL and 0), 
+     * and the error ENOTCONN is returned when the socket was not actually connected. 
+     * Otherwise, the address of the target is given by dest_addr with addrlen specifying its size.
+     */
     
     if (stat = sendto(udp_socket.sock, message_struct.message,\
         message_struct.mes_size, 0,\
@@ -208,7 +275,7 @@ struct Socket udp_socket_open (struct Settings *settings)
         sizeof(udp_socket.address)) != message_struct.mes_size)
         {
             fprintf(stderr,\
-            "Ошибка / частичная запись в сокет. Записано: %i из %i \n",\
+            "Ошибка / частичная запись в сокет. Записано: %zd из %i \n",\
             stat, message_struct.mes_size);
             return 1;
         }

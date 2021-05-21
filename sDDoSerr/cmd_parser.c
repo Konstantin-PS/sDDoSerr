@@ -78,7 +78,7 @@ sDDoSerr Copyright © 2019 Константин Панков
 
 
 const char *argp_program_bug_address = "konstantin.p.96@gmail.com";
-const char *argp_program_version = "v.1.4.2.25a";
+const char *argp_program_version = "v.1.4.2.27a";
 
 //Функция парсера.
 

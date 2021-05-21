@@ -3,7 +3,7 @@
   * 
   * Основной модуль программы.
   * 
-  * v.1.4.2.25a от 11.05.21.
+  * v.1.4.2.27a от 21.05.21.
   * !Не забывать изменять *argp_program_version 
   * под новую версию в парсере (cmd_parser.c), стр. 81!
   **/
@@ -173,6 +173,15 @@ int main (int argc, char *argv[])
                 
         exit(EXIT_FAILURE);
     }
+    
+    //Запись параметров в лог.
+    fprintf(log, "\n %s%s%s%s\n %s%lli\n %s%i\n %s%i\n %s%i \n\n",\
+    "Host:port: ",settings->host,":",settings->port,\
+    "Message size: ", settings->message_size,\
+    "Pack size: ", settings->pack_size,\
+    "Start pause: ", settings->start_pause,\
+    "Num of deltas: ", settings->num_deltas);
+    
 
     if (settings->debug == 1) //Если установлен флаг дебага.
         {
